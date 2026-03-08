@@ -13,24 +13,14 @@
 ```java
 class Solution {
     public List<Integer> postorder(Node root) {
-        // If the root is null, return an empty list
         if (root == null) return new ArrayList<>();
-
         List<Integer> res = new ArrayList<>();
-
-        // Start DFS from the root
         dfs(root, res);
-
-        // Return the result list containing node values in post-order
         return res;
     }
 
     private void dfs(Node root, List<Integer> res) {
-        // Recursively call dfs for each child of the current node
-        for (Node child : root.children) {
-            dfs(child, res);
-        }
-        // Append the value of the current node to the result list
+        for (Node child : root.children) dfs(child, res);
         res.add(root.val);
     }
 }
@@ -41,14 +31,14 @@ class Solution {
 ---
 ## Quick Revision
 Traverse an N-ary tree such that all children of a node are visited before the node itself.
-This is achieved using a Depth First Search (DFS) approach, either recursively or iteratively.
+This is solved using Depth First Search (DFS), either recursively or iteratively.
 
 ## Intuition
-The core idea of postorder traversal is to process children first. For an N-ary tree, this means for any given node, we must visit all of its children's subtrees completely before we can "visit" (i.e., add to our result list) the node itself. This naturally lends itself to a recursive DFS where we dive deep into each child's subtree and only add the parent's value once all its descendants have been processed.
+A postorder traversal for a binary tree visits left, then right, then the node. For an N-ary tree, this generalizes to visiting all children from left to right, and *then* visiting the node itself. The recursive DFS naturally handles this order: for each child, we recursively call DFS, ensuring all its descendants are processed. Once all children's subtrees are fully traversed, we add the current node's value.
 
 ## Algorithm
 1. Initialize an empty list `res` to store the postorder traversal result.
-2. If the `root` is null, return the empty `res` list.
+2. If the `root` is `null`, return the empty `res` list.
 3. Define a recursive helper function `dfs(node, res)`:
     a. For each `child` in the `node.children` list:
         i. Recursively call `dfs(child, res)`.
@@ -57,73 +47,67 @@ The core idea of postorder traversal is to process children first. For an N-ary 
 5. Return the `res` list.
 
 ## Concept to Remember
-*   **Tree Traversal:** Understanding different traversal orders (preorder, inorder, postorder, level order) and their applications.
-*   **Depth First Search (DFS):** The recursive nature of DFS is fundamental for tree traversals.
-*   **Recursion:** The ability to break down a problem into smaller, self-similar subproblems.
-*   **N-ary Trees:** Handling nodes with an arbitrary number of children.
+*   **Tree Traversal:** Understanding different orders (preorder, inorder, postorder) and their applications.
+*   **Depth First Search (DFS):** The core algorithmic technique for exploring tree and graph structures.
+*   **Recursion:** A powerful technique for solving problems that can be broken down into smaller, self-similar subproblems.
+*   **N-ary Trees:** Trees where a node can have an arbitrary number of children, not just two.
 
 ## Common Mistakes
-*   **Incorrect Order of Operations:** Adding the current node's value *before* visiting its children, which would result in a preorder traversal.
-*   **Handling Null Root:** Forgetting to check if the initial `root` is null, leading to a `NullPointerException`.
-*   **Modifying List During Iteration:** If an iterative approach were used with a stack, modifying the list while iterating over it could lead to errors.
-*   **Stack Overflow (Iterative):** For very deep trees, an iterative DFS using a stack might still consume significant memory.
+*   **Incorrect Order:** Forgetting that in postorder, the node is visited *after* its children.
+*   **Handling Null Root:** Not including a base case for an empty tree.
+*   **Modifying List During Iteration:** While not directly applicable in this specific recursive solution, iterative DFS might involve modifying a stack/queue while iterating, which can lead to errors.
+*   **Not Traversing All Children:** Missing a child in the loop when processing `node.children`.
 
 ## Complexity Analysis
-*   **Time:** O(N) - reason: Each node in the N-ary tree is visited exactly once.
-*   **Space:** O(H) - reason: This is the space used by the recursion call stack, where H is the height of the tree. In the worst case (a skewed tree), H can be N, making it O(N).
+*   Time: O(N) - Each node in the N-ary tree is visited exactly once.
+*   Space: O(H) - Where H is the height of the tree. This is due to the recursion call stack. In the worst case (a skewed tree), H can be N, leading to O(N) space.
 
 ## Commented Code
 ```java
 class Solution {
-    // Public method to initiate the postorder traversal
+    // The main function to initiate the postorder traversal.
     public List<Integer> postorder(Node root) {
-        // If the root node is null, it means the tree is empty, so return an empty list.
+        // If the tree is empty (root is null), return an empty list.
         if (root == null) return new ArrayList<>();
-
-        // Initialize an ArrayList to store the result of the postorder traversal.
+        // Initialize a list to store the result of the traversal.
         List<Integer> res = new ArrayList<>();
-
-        // Start the Depth First Search (DFS) traversal from the root node.
+        // Call the recursive helper function to perform the DFS traversal.
         dfs(root, res);
-
-        // Return the list containing node values in post-order.
+        // Return the list containing the postorder traversal.
         return res;
     }
 
-    // Private helper method to perform the recursive DFS traversal
+    // Recursive helper function for Depth First Search (DFS).
     private void dfs(Node root, List<Integer> res) {
         // Iterate through each child of the current node.
         for (Node child : root.children) {
-            // Recursively call dfs on each child. This ensures that all descendants of a child are visited before the current node.
+            // Recursively call dfs on each child to traverse its subtree first.
             dfs(child, res);
         }
-        // After all children (and their subtrees) have been visited, add the value of the current node to the result list.
+        // After all children's subtrees have been traversed, add the current node's value to the result list.
         res.add(root.val);
     }
 }
 ```
 
 ## Interview Tips
-*   **Explain the "Why":** Clearly articulate *why* postorder traversal requires visiting children before the parent.
-*   **Trace an Example:** Be prepared to walk through a small N-ary tree example to demonstrate your understanding of the traversal.
-*   **Discuss Iterative vs. Recursive:** Briefly mention that an iterative solution using a stack is also possible, and discuss its trade-offs (e.g., avoiding recursion depth limits but potentially more complex logic).
-*   **Clarify Node Structure:** Ensure you understand the `Node` structure, specifically how children are represented (e.g., a `List<Node>`).
+*   **Clarify the Definition:** Ensure you and the interviewer are on the same page about what "postorder" means for an N-ary tree (children first, then parent).
+*   **Explain the Recursion:** Clearly articulate how the recursive calls ensure all children are processed before the parent.
+*   **Consider Iterative Approach:** Be prepared to discuss or implement an iterative solution using a stack, which is a common follow-up. This often involves a slight modification to the standard iterative preorder/inorder to achieve postorder.
+*   **Edge Cases:** Mention handling the `null` root case explicitly.
 
 ## Revision Checklist
-- [ ] Understand the definition of postorder traversal.
-- [ ] Implement recursive DFS for N-ary trees.
-- [ ] Handle the base case of a null root.
-- [ ] Correctly add node values *after* processing children.
+- [ ] Understand N-ary tree structure.
+- [ ] Define postorder traversal for N-ary trees.
+- [ ] Implement recursive DFS correctly.
+- [ ] Handle the null root edge case.
 - [ ] Analyze time and space complexity.
-- [ ] Consider an iterative approach (optional but good for discussion).
+- [ ] Be ready to discuss iterative solutions.
 
 ## Similar Problems
-*   LeetCode 589: N-ary Tree Preorder Traversal
-*   LeetCode 590: N-ary Tree Postorder Traversal (this problem)
-*   LeetCode 144: Binary Tree Preorder Traversal
-*   LeetCode 94: Binary Tree Inorder Traversal
-*   LeetCode 145: Binary Tree Postorder Traversal
-*   LeetCode 102: Binary Tree Level Order Traversal
+*   N Ary Tree Preorder Traversal
+*   Binary Tree Postorder Traversal
+*   N Ary Tree Level Order Traversal
 
 ## Tags
 `Tree` `Depth-First Search` `Recursion` `N-ary Tree`
