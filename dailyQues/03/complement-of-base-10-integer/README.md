@@ -38,43 +38,39 @@ The problem asks for the bitwise complement of a number. The most straightforwar
     a. If it's '0', replace it with '1'.
     b. If it's '1', replace it with '0'.
 3. Convert the modified binary string back into an integer, interpreting it as a base-2 number.
-4. Return the resulting integer.
 
 ## Concept to Remember
 *   Binary Representation: Understanding how integers are represented in base-2.
-*   String Manipulation: Proficiency in converting between numbers and strings, and modifying strings.
-*   Base Conversion: Ability to parse a string as a number in a specific base (e.g., base-2).
+*   String Manipulation: Ability to convert between number types and strings, and perform character replacements.
+*   Base Conversion: Converting a binary string back to a decimal integer.
 
 ## Common Mistakes
-*   Forgetting to handle leading zeros: The `Integer.toBinaryString()` method doesn't produce leading zeros, which is fine for this problem's logic as we're flipping the bits of the *actual* binary representation. However, if the problem implied a fixed bit-width, this would be an issue.
-*   Incorrectly implementing the bit-flipping logic: Simple character replacements can be error-prone if not done carefully.
+*   Forgetting to handle leading zeros: The `Integer.toBinaryString()` method doesn't produce leading zeros, which is fine for this problem as we are only concerned with the significant bits.
+*   Incorrectly implementing the bit flipping logic: Simple character replacement errors can lead to wrong results.
 *   Not specifying the radix (base) when parsing the binary string back to an integer.
 
 ## Complexity Analysis
-- Time: O(L) - where L is the number of bits in the binary representation of `n`. This is because converting to binary, manipulating the string, and converting back all take time proportional to the length of the binary string.
+- Time: O(L) - where L is the number of bits in the binary representation of `n`. This is because converting to binary, string replacements, and parsing back all take time proportional to the length of the binary string.
 - Space: O(L) - for storing the binary string representation of `n`.
 
 ## Commented Code
 ```java
 class Solution {
     public int bitwiseComplement(int n) {
-        // Convert the integer 'n' into its binary string representation.
+        // Convert the integer n to its binary string representation.
         String s = Integer.toBinaryString(n);
         
-        // Replace all '0's with a temporary placeholder character '-'.
-        // This is done to avoid replacing '1's with '0's and then immediately
-        // replacing those new '0's back to '1's in a single pass if we did
-        // '0' -> '1' and '1' -> '0' directly.
+        // Replace all '0' characters with a temporary placeholder '-'.
+        // This is done to avoid issues when replacing '1' with '0' next.
         s = s.replace('0','-');
         
-        // Now, replace all original '1's with '0's.
+        // Replace all '1' characters with '0'.
         s = s.replace('1','0');
         
-        // Finally, replace the temporary placeholder '-' (which were original '0's) with '1's.
+        // Replace all temporary placeholders '-' (which were originally '0') with '1'.
         s = s.replace('-','1');
         
-        // Parse the modified binary string 's' back into an integer,
-        // specifying that the string is in base-2.
+        // Parse the modified binary string back into an integer, specifying base 2.
         return Integer.parseInt(s,2);
     }
 }
@@ -82,23 +78,23 @@ class Solution {
 
 ## Interview Tips
 *   Explain your thought process clearly, starting with the binary representation.
-*   Ask clarifying questions about edge cases, like `n=0`. (The provided solution handles `n=0` correctly, returning `1`).
-*   Discuss alternative approaches, such as using bitwise operators directly if the problem constraints allowed for a fixed bit width or if you wanted to avoid string conversions.
-*   Be prepared to explain why the string replacement method works and its limitations.
+*   Discuss alternative approaches, like using bitwise operators directly (e.g., XOR with a mask of all ones).
+*   Be prepared to explain the time and space complexity of your chosen solution.
+*   Ask clarifying questions if the problem statement is ambiguous.
 
 ## Revision Checklist
-- [ ] Understand the definition of a bitwise complement.
-- [ ] Practice converting between decimal and binary.
-- [ ] Be comfortable with string manipulation in Java.
-- [ ] Know how to use `Integer.toBinaryString()` and `Integer.parseInt(String s, int radix)`.
+- [ ] Understand the concept of bitwise complement.
+- [ ] Know how to convert an integer to its binary string.
+- [ ] Be proficient in string manipulation for character replacement.
+- [ ] Know how to parse a binary string back to an integer.
+- [ ] Analyze time and space complexity.
 
 ## Similar Problems
-*   Number of 1 Bits
-*   Reverse Bits
-*   Hamming Distance
+- LeetCode 476: Number Complement
+- LeetCode 1009: Complement of Base 10 Integer (This is the same problem, often presented with slightly different wording)
 
 ## Tags
-`String` `Bit Manipulation`
+`String` `Bit Manipulation` `Math`
 
 ## My Notes
 Not the most optimal one
