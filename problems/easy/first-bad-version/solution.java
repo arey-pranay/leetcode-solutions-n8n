@@ -5,15 +5,13 @@ public class Solution extends VersionControl {
     public int firstBadVersion(int n) {
         int first = 1; 
         int last = n;
-        int ans =0;
-        while(first<=last){
+        while(first<last){
             int m = first+(last-first)/2;
             if(isBadVersion(m)) {
-                ans = m;
-                last = m-1;
+                last = m;
             }
             else first = m+1 ;
         }
-        return ans ;
+        return first;
     }
 }
