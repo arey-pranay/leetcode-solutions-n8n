@@ -24,12 +24,11 @@ class Solution {
     public int func(TreeNode root){
        
         if(root == null) return 0;
-        // agr child ne apna best diya lekin fir bhi -ve aagya, to usko consider mt kro
-        int leftKaMax = func(root.left); 
-        if(leftKaMax<0) leftKaMax = 0;
-        int rightKaMax = func(root.right); 
-        if(rightKaMax<0) rightKaMax = 0;
         
+        // agr child ne apna best diya lekin fir bhi -ve aagya, to usko consider mt kro
+        int leftKaMax = Math.max(0,func(root.left)); 
+        int rightKaMax = Math.max(0,func(root.right));     
+            
         // current node pe rehte hue best answer jo aa skta hai -> pathViaRoot (because leftKaMax and rightKaMax aer non-negative always)
         int pathViaRoot = leftKaMax + rightKaMax + root.val;
         ans = Math.max(ans, pathViaRoot);
