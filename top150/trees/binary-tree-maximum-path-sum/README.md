@@ -37,12 +37,11 @@ class Solution {
     public int func(TreeNode root){
        
         if(root == null) return 0;
-        // agr child ne apna best diya lekin fir bhi -ve aagya, to usko consider mt kro
-        int leftKaMax = func(root.left); 
-        if(leftKaMax<0) leftKaMax = 0;
-        int rightKaMax = func(root.right); 
-        if(rightKaMax<0) rightKaMax = 0;
         
+        // agr child ne apna best diya lekin fir bhi -ve aagya, to usko consider mt kro
+        int leftKaMax = Math.max(0,func(root.left)); 
+        int rightKaMax = Math.max(0,func(root.right));     
+            
         // current node pe rehte hue best answer jo aa skta hai -> pathViaRoot (because leftKaMax and rightKaMax aer non-negative always)
         int pathViaRoot = leftKaMax + rightKaMax + root.val;
         ans = Math.max(ans, pathViaRoot);
@@ -104,38 +103,38 @@ class Solution {
 
 ---
 ## Quick Revision
-This problem asks for the maximum sum of a path in a binary tree, where a path can start and end at any node. The solution uses a recursive approach to explore all possible paths.
+This problem asks for the maximum sum of a path in a binary tree, where a path can start and end at any node. The solution uses a recursive approach to explore all possible paths and track the maximum sum.
 
 ## Intuition
-The core idea is that for any given node, the maximum path sum passing through it can be formed by the node's value plus the maximum path sum from its left child and the maximum path sum from its right child. However, a path can only extend upwards from a child to its parent once. This means a child can only contribute its best *single* path sum (either left-leaning or right-leaning) to its parent, not a path that branches out. We need to keep track of the global maximum path sum found so far.
+The "aha moment" comes from realizing that for any given node, the maximum path sum *passing through* that node can be formed by taking the node's value, plus the maximum possible path sum from its left child (if positive), plus the maximum possible path sum from its right child (if positive). However, when a node returns a value to its parent, it can only contribute *one* path (either through its left or right subtree, whichever is greater) to avoid creating a "V" shape that would not be a valid path.
 
 ## Algorithm
-1. Initialize a global variable `ans` to the smallest possible integer value to store the maximum path sum found.
-2. Define a recursive helper function `func(node)` that returns the maximum path sum starting from `node` and going downwards (either to the left or right subtree, but not both branching out).
+1. Initialize a global variable `ans` to store the maximum path sum found so far, setting it to the smallest possible integer value.
+2. Define a recursive helper function `func(TreeNode node)` that returns the maximum path sum starting from `node` and going downwards (i.e., a path that can be extended upwards by its parent).
 3. **Base Case:** If `node` is null, return 0 (as a null node contributes nothing to a path sum).
 4. Recursively call `func` on the left child: `leftMax = func(node.left)`.
 5. Recursively call `func` on the right child: `rightMax = func(node.right)`.
-6. **Pruning Negative Paths:** If `leftMax` is negative, set it to 0. This is because a path with a negative sum would only decrease the total path sum, so we'd rather not include it. Do the same for `rightMax`.
-7. **Calculate Path Through Current Node:** Calculate the potential maximum path sum that *includes* the current `node` as the highest point (the "peak" of the path). This path sum is `node.val + leftMax + rightMax`.
-8. **Update Global Maximum:** Update `ans` with the maximum of its current value and `pathViaRoot`. This step considers paths that might "turn" at the current node.
-9. **Return Value for Parent:** The function must return the maximum path sum that can be extended *upwards* to the parent. This path can only go down one branch from the current node. So, it's `node.val + Math.max(leftMax, rightMax)`.
-10. Call `func(root)` to start the process.
+6. **Pruning Negative Paths:** Since we only want to extend paths that increase the sum, if `leftMax` or `rightMax` are negative, treat them as 0. This is done using `Math.max(0, leftMax)` and `Math.max(0, rightMax)`.
+7. **Calculate Path Through Current Node:** Calculate the potential maximum path sum that *includes* the current `node` as the highest point (the "peak" of the path). This path sum is `node.val + Math.max(0, leftMax) + Math.max(0, rightMax)`.
+8. **Update Global Maximum:** Update the global `ans` with the maximum between its current value and the `pathViaRoot` calculated in the previous step: `ans = Math.max(ans, pathViaRoot)`.
+9. **Return Value to Parent:** The function must return the maximum path sum that can be extended upwards to the parent. This path can only go down one branch from the current node. Therefore, return `node.val + Math.max(Math.max(0, leftMax), Math.max(0, rightMax))`.
+10. Call `func(root)` to start the recursion.
 11. Return the final `ans`.
 
 ## Concept to Remember
-*   **Recursion and Post-order Traversal:** The problem is naturally solved with recursion, and the logic of processing children before the parent (to determine what to pass up) resembles a post-order traversal.
-*   **Dynamic Programming (Implicit):** Although not explicitly using a DP table, the recursive calls with memoization (or the way we reuse computed subtree results) have DP characteristics.
-*   **Handling Negative Values:** The crucial part is deciding when to "cut off" a path that yields a negative sum, as it's better to not include it.
+*   **Recursion and Post-order Traversal:** The problem is naturally solved with recursion, and the logic of processing children before the parent (to decide what to return) resembles a post-order traversal.
+*   **Dynamic Programming (Implicit):** Although not explicitly using a DP table, the recursive calls with memoization (or in this case, the return values themselves acting as subproblem solutions) exhibit DP characteristics.
+*   **Handling Negative Values:** Crucially, paths with negative sums should be discarded or treated as zero when extending from a child to a parent or when calculating a path through a node.
 
 ## Common Mistakes
-*   **Not handling negative node values or subtree sums:** Forgetting to prune negative `leftMax` and `rightMax` can lead to incorrect results.
-*   **Confusing the return value of the recursive function:** The function needs to return the best *single-path* sum to the parent, not the best path that *turns* at the current node.
-*   **Not updating the global maximum correctly:** Failing to consider paths that might "turn" at the current node (i.e., `node.val + leftMax + rightMax`) will miss potential maximums.
-*   **Incorrect base case for recursion:** Returning a non-zero value for a null node can cause issues.
+*   **Not handling negative path sums:** Forgetting to use `Math.max(0, ...)` when considering child paths can lead to incorrect results if subtrees have negative sums.
+*   **Incorrect return value:** Returning the `pathViaRoot` instead of the maximum single-branch path to the parent. The parent can only extend one branch.
+*   **Not initializing `ans` correctly:** Initializing `ans` to 0 might fail for trees with all negative node values. It should be initialized to `Integer.MIN_VALUE`.
+*   **Confusing path definition:** Misunderstanding that a path doesn't need to start at the root or end at a leaf.
 
 ## Complexity Analysis
 - Time: O(N) - reason: Each node in the binary tree is visited exactly once by the recursive function.
-- Space: O(H) - reason: This is the space used by the recursion call stack, where H is the height of the tree. In the worst case (a skewed tree), H can be N, leading to O(N) space. In a balanced tree, H is log N, leading to O(log N) space.
+- Space: O(H) - reason: The space complexity is determined by the recursion depth, which is the height (H) of the binary tree. In the worst case (a skewed tree), H can be N, leading to O(N) space. In a balanced tree, H is log N, leading to O(log N) space.
 
 ## Commented Code
 ```java
@@ -160,66 +159,65 @@ class Solution {
 
     // The main function that initiates the path sum calculation.
     public int maxPathSum(TreeNode root) {
-        // Call the recursive helper function to start the process from the root.
+        // Call the recursive helper function starting from the root.
         func(root);
         // After the recursion completes, 'ans' will hold the maximum path sum.
         return ans;
     }
 
-    // This recursive function calculates the maximum path sum that can be extended upwards from the current node.
-    // It also updates the global 'ans' with the maximum path sum that *passes through* the current node.
+    // This recursive helper function calculates the maximum path sum starting from 'root'
+    // and going downwards, and also updates the global 'ans' if a new maximum path is found.
     public int func(TreeNode root){
         // Base case: If the current node is null, it contributes 0 to any path sum.
         if(root == null) return 0;
 
         // Recursively find the maximum path sum from the left child.
-        // This path can only extend downwards from the left child.
-        int leftKaMax = func(root.left);
-        // If the maximum path sum from the left child is negative, we discard it.
-        // A negative contribution would only decrease the total path sum, so we treat it as 0.
-        if(leftKaMax<0) leftKaMax = 0;
-
-        // Recursively find the maximum path sum from the right child.
-        // This path can only extend downwards from the right child.
-        int rightKaMax = func(root.right);
-        // If the maximum path sum from the right child is negative, we discard it.
-        // A negative contribution would only decrease the total path sum, so we treat it as 0.
-        if(rightKaMax<0) rightKaMax = 0;
+        // We take Math.max(0, ...) because if the path sum from the child is negative,
+        // we don't want to extend that path; it's better to not include it (effectively adding 0).
+        int leftKaMax = Math.max(0,func(root.left));
+        // Recursively find the maximum path sum from the right child, applying the same logic.
+        int rightKaMax = Math.max(0,func(root.right));
 
         // Calculate the maximum path sum that *passes through* the current node.
         // This path can potentially include the current node, the best path from its left, and the best path from its right.
-        // 'leftKaMax' and 'rightKaMax' are guaranteed to be non-negative here due to the pruning step.
+        // Since leftKaMax and rightKaMax are already non-negative, this sum represents a valid path that "peaks" at 'root'.
         int pathViaRoot = leftKaMax + rightKaMax + root.val;
-
-        // Update the global maximum path sum ('ans') if the path passing through the current node is greater.
+        // Update the global maximum path sum if the path through the current node is greater than the current maximum.
         ans = Math.max(ans, pathViaRoot);
 
-        // The value returned by this function is the maximum path sum that can be extended *upwards* to the parent.
-        // A path extending upwards can only take one branch (either left or right) from the current node.
-        // Therefore, we return the current node's value plus the maximum of the (non-negative) left and right path sums.
+        // For the parent node, this current node can only contribute a path that goes downwards from it.
+        // It cannot contribute a path that splits into both left and right subtrees (a "V" shape),
+        // as that would not be a valid single path extending upwards.
+        // Therefore, we return the current node's value plus the maximum of the non-negative path sums from its children.
+        // This is the best single-branch path that can be extended upwards to the parent.
         return root.val + Math.max(leftKaMax,rightKaMax);
     }
 }
 ```
 
 ## Interview Tips
-*   **Clarify Path Definition:** Ensure you understand what constitutes a "path" (it doesn't have to go through the root, and it can start/end anywhere).
-*   **Explain the Return Value:** Clearly articulate why the recursive function returns `node.val + Math.max(leftMax, rightMax)` and how it differs from the `pathViaRoot` calculation. This is a common point of confusion.
-*   **Handle Edge Cases:** Discuss how you handle null nodes and trees with only one node. Also, mention the importance of initializing `ans` to `Integer.MIN_VALUE`.
-*   **Walk Through an Example:** Be prepared to trace your algorithm on a small tree, especially one with negative values, to demonstrate your understanding.
+*   **Clarify Path Definition:** Ensure you understand what constitutes a "path" (can start/end anywhere, doesn't need to include root, can be a single node).
+*   **Explain the Return Value:** Clearly articulate why the recursive function returns `node.val + Math.max(leftMax, rightMax)` and not `pathViaRoot`. This is a common point of confusion.
+*   **Handle Negatives Explicitly:** Emphasize how `Math.max(0, ...)` is used to prune negative sub-paths, as this is critical for correctness.
+*   **Trace an Example:** Be prepared to trace a small tree (e.g., with a few nodes, including negative values) to demonstrate your understanding of the algorithm's execution.
 
 ## Revision Checklist
 - [ ] Understand the definition of a path in a binary tree.
-- [ ] Implement a recursive function that returns the maximum path sum extending upwards from a node.
-- [ ] Correctly handle negative path sums from children by pruning them to 0.
-- [ ] Calculate and update the global maximum path sum considering paths that "turn" at the current node.
-- [ ] Ensure the base case for recursion is handled correctly.
-- [ ] Analyze time and space complexity.
+- [ ] Implement a recursive function that traverses the tree.
+- [ ] Correctly handle the base case (null nodes).
+- [ ] Use `Math.max(0, ...)` to ignore negative path sums from children.
+- [ ] Calculate the path sum that passes *through* the current node and update the global maximum.
+- [ ] Determine the correct value to *return* to the parent (maximum single-branch path).
+- [ ] Initialize the global maximum variable appropriately (`Integer.MIN_VALUE`).
 
 ## Similar Problems
-*   Maximum Path Sum in a Binary Tree II (LeetCode 124) - This is the exact problem.
-*   Diameter of Binary Tree (LeetCode 543) - Similar in that it involves calculating lengths/sums related to paths, but the definition of a path is different.
-*   Lowest Common Ancestor of a Binary Tree (LeetCode 236) - Involves tree traversal and understanding node relationships.
+*   [LeetCode 124] Binary Tree Maximum Path Sum (This problem)
+*   [LeetCode 543] Diameter of Binary Tree
+*   [LeetCode 104] Maximum Depth of Binary Tree
+*   [LeetCode 111] Minimum Depth of Binary Tree
 
 ## Tags
-`Depth-First Search` `Tree` `Binary Tree` `Recursion`
+`Tree` `Depth-First Search` `Binary Tree` `Recursion`
+
+## My Notes
+5 line amazing
