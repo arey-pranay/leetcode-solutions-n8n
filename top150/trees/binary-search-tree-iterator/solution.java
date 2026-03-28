@@ -14,18 +14,17 @@
  * }
  */
 class BSTIterator {
-    ArrayList<Integer> inorder = new ArrayList<>();
-    int pointer = 0;
+    Queue<Integer> inorder = new LinkedList<>();
     public BSTIterator(TreeNode root) {
         func(root);
     }
     
     public int next() {
-        return inorder.get(pointer++);
+        return inorder.poll();
     }
     
     public boolean hasNext() {
-        return pointer < inorder.size();
+        return inorder.size() != 0;
     }
     
     public void func(TreeNode root){
