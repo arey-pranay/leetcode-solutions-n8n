@@ -27,6 +27,7 @@ class Solution {
         }
 
         // Step 2: Flip remaining O -> X, # -> O
+        //koi O agr abhi tk bacha hua hai, to mtlb wo doob jayega because it is not connected to any boundary group
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 if (board[i][j] == 'O') board[i][j] = 'X';
@@ -38,12 +39,12 @@ class Solution {
     private void dfs(int i, int j, char[][] board) {
         int m = board.length, n = board[0].length;
 
-        // boundary + condition check
+        // out of bound OR water check
         if (i < 0 || j < 0 || i >= m || j >= n || board[i][j] != 'O')
             return;
 
-        board[i][j] = '#'; // mark safe
-
+        board[i][j] = '#'; // mark unsafe
+        
         dfs(i + 1, j, board);
         dfs(i - 1, j, board);
         dfs(i, j + 1, board);
@@ -56,34 +57,38 @@ class Solution {
 
 ---
 ## Quick Revision
-The problem asks to capture all 'O' regions that are completely surrounded by 'X's.
-We solve this by identifying 'O's connected to the border and marking them, then flipping the rest.
+The problem asks to capture regions of 'X's surrounded by 'O's on a 2D board.
+We solve this by identifying 'O's connected to the boundary and marking them, then flipping all other 'O's to 'X's.
 
 ## Intuition
-The key insight is that any 'O' that is *not* surrounded must be connected to an 'O' on the border of the grid. If an 'O' can reach the border, it's safe. All other 'O's are surrounded. So, we can start from the borders and explore all reachable 'O's. These are the "safe" 'O's. Any 'O's that remain unmarked after this exploration must be surrounded and can be flipped to 'X'.
+The key insight is that any 'O' that is *not* surrounded must be connected to an 'O' on the boundary of the board. If an 'O' can reach the edge, it's safe. All other 'O's are surrounded. So, instead of trying to find surrounded regions directly, we find the *un-surrounded* regions. We can do this by starting a traversal (like DFS or BFS) from every 'O' on the border. Any 'O' reachable from the border is safe. We can mark these safe 'O's with a temporary character (e.g., '#'). After marking all safe 'O's, we iterate through the board: any remaining 'O's must be surrounded and can be flipped to 'X', and the temporary '#' characters can be flipped back to 'O'.
 
 ## Algorithm
-1.  **Identify Border-Connected 'O's:** Iterate through all cells on the four borders of the grid (top row, bottom row, left column, right column).
-2.  **Mark Safe 'O's:** If a border cell contains an 'O', start a Depth First Search (DFS) or Breadth First Search (BFS) from that cell. During the traversal, mark every visited 'O' with a temporary character (e.g., '#') to indicate it's connected to the border and thus "safe".
-3.  **Flip Surrounded 'O's:** After marking all border-connected 'O's, iterate through the entire grid.
-    *   If a cell contains the temporary marker ('#'), change it back to 'O' (it's safe).
-    *   If a cell still contains an 'O', it means it was not reachable from the border, so it's surrounded. Flip it to 'X'.
+1.  **Identify Boundary-Connected 'O's:**
+    *   Iterate through the cells on the top and bottom rows of the board. If a cell contains 'O', start a Depth First Search (DFS) or Breadth First Search (BFS) from it.
+    *   Iterate through the cells on the left and right columns of the board. If a cell contains 'O', start a DFS or BFS from it.
+    *   During the traversal (DFS/BFS), if you encounter an 'O', mark it with a temporary character (e.g., '#') to indicate it's connected to the boundary and thus "safe". Also, recursively/iteratively visit its adjacent cells (up, down, left, right).
+2.  **Flip Surrounded 'O's and Restore Safe 'O's:**
+    *   Iterate through the entire board.
+    *   If a cell contains 'O', it means this 'O' was not reachable from any boundary 'O', so it's surrounded. Flip it to 'X'.
+    *   If a cell contains '#', it means this was a boundary-connected 'O'. Flip it back to 'O'.
 
 ## Concept to Remember
-*   **Graph Traversal (DFS/BFS):** This problem can be modeled as finding connected components in a graph where adjacent 'O's are connected. DFS or BFS is ideal for exploring these components.
-*   **In-place Modification:** The problem requires modifying the input grid directly, which is a common technique to save space.
-*   **Boundary Conditions:** Carefully handling grid boundaries is crucial to avoid index out-of-bounds errors.
-*   **Marking Visited Nodes:** Using a temporary marker is essential to distinguish between safe 'O's and those that need to be flipped, and to prevent infinite loops in traversal.
+*   **Graph Traversal (DFS/BFS):** Essential for exploring connected components in a grid.
+*   **Boundary Conditions:** Handling edges and corners of the grid is crucial.
+*   **In-place Modification:** Modifying the input array directly to save space.
+*   **Marking Visited/Safe States:** Using temporary markers to distinguish different states of cells.
 
 ## Common Mistakes
-*   **Flipping 'O's without checking border connection:** Directly flipping all 'O's to 'X's and then trying to revert them is inefficient and complex. The correct approach is to identify what *not* to flip first.
-*   **Not handling boundary cases correctly in DFS/BFS:** Forgetting to check if `i` or `j` are within grid bounds before accessing `board[i][j]`.
-*   **Using recursion without a proper base case or visited check:** This can lead to stack overflow errors or infinite recursion.
-*   **Modifying the grid in a way that interferes with subsequent traversals:** For example, flipping an 'O' to 'X' too early might prevent a connected 'O' from being discovered.
+*   **Incorrect Boundary Check:** Not considering all four boundaries (top, bottom, left, right) for starting the traversal.
+*   **Infinite Recursion/Loops:** Not marking visited cells or using a temporary marker, leading to revisiting cells and potential stack overflow or infinite loops.
+*   **Flipping 'O's Before Marking:** Trying to flip surrounded 'O's without first identifying and marking the safe 'O's.
+*   **Not Restoring Marked Cells:** Forgetting to change the temporary marker back to 'O' after the second pass.
+*   **Off-by-One Errors:** Incorrectly calculating row/column indices or boundary conditions.
 
 ## Complexity Analysis
-*   **Time:** O(m * n) - Each cell in the grid is visited at most a constant number of times (once during the border traversal/DFS and once during the final flip).
-*   **Space:** O(m * n) - In the worst case, the recursion depth of DFS can be proportional to the number of cells in the grid if the grid is filled with 'O's and forms a long path. This is for the call stack. If BFS were used with a queue, it would also be O(m*n) in the worst case.
+*   **Time:** O(m * n) - We visit each cell at most a constant number of times (once for marking, once for flipping). The DFS/BFS from boundary cells will explore each reachable 'O' once.
+*   **Space:** O(m * n) - In the worst case, the recursion depth of DFS can be proportional to the number of cells in the grid (e.g., a board filled with 'O's). This is for the call stack. If BFS is used, the queue can also store up to O(m*n) elements.
 
 ## Commented Code
 ```java
@@ -93,19 +98,19 @@ class Solution {
         int m = board.length, n = board[0].length;
 
         // Step 1: Mark boundary connected O's.
-        // Iterate through the first and last columns to find 'O's connected to the border.
+        // Iterate through the first and last columns.
         for (int i = 0; i < m; i++) {
-            // Check the leftmost column.
+            // If an 'O' is found on the left boundary, start DFS to mark it and its connected 'O's.
             dfs(i, 0, board);
-            // Check the rightmost column.
+            // If an 'O' is found on the right boundary, start DFS to mark it and its connected 'O's.
             dfs(i, n - 1, board);
         }
 
-        // Iterate through the first and last rows to find 'O's connected to the border.
+        // Iterate through the first and last rows.
         for (int j = 0; j < n; j++) {
-            // Check the topmost row.
+            // If an 'O' is found on the top boundary, start DFS to mark it and its connected 'O's.
             dfs(0, j, board);
-            // Check the bottommost row.
+            // If an 'O' is found on the bottom boundary, start DFS to mark it and its connected 'O's.
             dfs(m - 1, j, board);
         }
 
@@ -113,29 +118,28 @@ class Solution {
         // Iterate through the entire board to finalize the changes.
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                // If a cell is still 'O', it means it was not reached from the border, so it's surrounded. Flip it to 'X'.
+                // If a cell is still 'O', it means it was not connected to any boundary 'O', so it's surrounded. Flip it to 'X'.
                 if (board[i][j] == 'O') board[i][j] = 'X';
-                // If a cell is marked with '#', it means it was connected to the border and is safe. Revert it back to 'O'.
+                // If a cell is '#', it means it was a boundary-connected 'O' that we marked. Restore it back to 'O'.
                 else if (board[i][j] == '#') board[i][j] = 'O';
             }
         }
     }
 
-    // Helper function for Depth First Search (DFS) to mark connected 'O's.
+    // Helper function for Depth First Search.
     private void dfs(int i, int j, char[][] board) {
         // Get the dimensions of the board.
         int m = board.length, n = board[0].length;
 
-        // Boundary and condition check:
-        // If the current cell is out of bounds (i < 0, j < 0, i >= m, j >= n)
-        // OR if the current cell is not an 'O' (it's 'X' or already marked '#'), then return.
+        // Base case for recursion:
+        // Check if the current cell is out of bounds OR if it's not an 'O' (it's 'X' or already marked '#').
         if (i < 0 || j < 0 || i >= m || j >= n || board[i][j] != 'O')
-            return;
+            return; // Stop the traversal for this path.
 
-        // Mark the current 'O' cell with '#' to indicate it's safe (connected to the border).
+        // Mark the current 'O' cell with '#' to indicate it's safe (connected to the boundary).
         board[i][j] = '#';
-
-        // Recursively call DFS for adjacent cells (up, down, left, right).
+        
+        // Recursively call DFS for adjacent cells (down, up, right, left).
         dfs(i + 1, j, board); // Move down
         dfs(i - 1, j, board); // Move up
         dfs(i, j + 1, board); // Move right
@@ -145,18 +149,18 @@ class Solution {
 ```
 
 ## Interview Tips
-*   **Explain the "Why":** Clearly articulate why starting from the border is the correct strategy. Emphasize that any 'O' not connected to the border is by definition surrounded.
-*   **Discuss DFS vs. BFS:** Be prepared to explain both DFS and BFS approaches and their trade-offs (e.g., DFS uses call stack space, BFS uses queue space). For this problem, either is fine.
-*   **Edge Cases:** Mention handling empty boards or boards with only one row/column. Also, consider a board entirely filled with 'X's or 'O's.
-*   **In-place Modification:** Highlight that the solution modifies the board in-place, which is often a desirable constraint for space efficiency.
+*   **Explain the "Why":** Clearly articulate why marking boundary-connected 'O's is more efficient than trying to find surrounded regions directly.
+*   **Trace an Example:** Walk through a small 3x3 or 4x4 board with a mix of 'X's and 'O's to demonstrate your understanding of the algorithm.
+*   **Discuss Alternatives:** Briefly mention BFS as an alternative to DFS and discuss its trade-offs (e.g., iterative vs. recursive, space usage).
+*   **Handle Edge Cases:** Be prepared to discuss how your solution handles empty boards, boards with only 'X's, or boards with only 'O's.
 
 ## Revision Checklist
-- [ ] Understand the problem: capture surrounded 'O's.
-- [ ] Identify the core idea: 'O's connected to the border are safe.
-- [ ] Choose a traversal method: DFS or BFS.
-- [ ] Implement border traversal: iterate through all border cells.
-- [ ] Implement DFS/BFS: mark reachable 'O's with a temporary character.
-- [ ] Implement final pass: flip remaining 'O's to 'X' and temporary markers back to 'O'.
+- [ ] Understand the problem: capture 'O's not connected to the boundary.
+- [ ] Identify boundary 'O's as the starting point for safe regions.
+- [ ] Use DFS or BFS to mark all 'O's reachable from the boundary.
+- [ ] Use a temporary marker (e.g., '#') for safe 'O's.
+- [ ] Iterate through the board to flip remaining 'O's to 'X's.
+- [ ] Restore temporary markers back to 'O's.
 - [ ] Analyze time and space complexity.
 - [ ] Consider edge cases.
 
@@ -168,3 +172,6 @@ class Solution {
 
 ## Tags
 `Array` `Depth-First Search` `Breadth-First Search` `Matrix`
+
+## My Notes
+reverse DFS
