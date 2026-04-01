@@ -14,6 +14,7 @@ class Solution {
         }
 
         // Step 2: Flip remaining O -> X, # -> O
+        //koi O agr abhi tk bacha hua hai, to mtlb wo doob jayega because it is not connected to any boundary group
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 if (board[i][j] == 'O') board[i][j] = 'X';
@@ -25,12 +26,12 @@ class Solution {
     private void dfs(int i, int j, char[][] board) {
         int m = board.length, n = board[0].length;
 
-        // boundary + condition check
+        // out of bound OR water check
         if (i < 0 || j < 0 || i >= m || j >= n || board[i][j] != 'O')
             return;
 
-        board[i][j] = '#'; // mark safe
-
+        board[i][j] = '#'; // mark unsafe
+        
         dfs(i + 1, j, board);
         dfs(i - 1, j, board);
         dfs(i, j + 1, board);
