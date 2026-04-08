@@ -28,3 +28,16 @@ class Solution {
         return 0;
     }
 }
+// hum hashset bss isliye bna rhe hai taaki order of 1 m traverse kr ske 
+// queue m  humnein 1st word daala begin waala 
+// usko end waale se check kiya nahi hai to usko remove kra 
+// remove k baad jese hit hai word , tp h k liye a to z se bdl kr wordlist se check kra agr hai usme to queue m daala otherwise nahi 
+// ese hi hit k i aur t k liye bhi 
+// queue m dalte gaye  jese hi h , i aur t k liye bhi hogya end m aagye to level ++ kiya 
+
+// kyonki level ++ tb hi krna hai jb ek later k checge ki kahani khtm hogyi ho bhale vo koi bhi ho 
+// hit se hot , hit se bit yaa hit se his , this is a total level , agr teeno bhi queue m add hogye to bhi level 0 se 1 hi hoga 3 nahi , kyonki vo ek word ka dusre word m change ka level hai smjhee
+
+// queue k  saare elemets k liye ek level hai haa
+// ese hi phir har word jo queue m daal rhe hai uske liye krte gaye krte gaye 
+// aur jese hi match mila level return .
