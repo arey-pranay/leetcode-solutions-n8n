@@ -12,47 +12,51 @@
 
 ```java
 class Solution {
-    public int findPeakElement(int[] nums) {
-        int left = 0, right = nums.length-1;
-        while(left<right){
-            int mid = left + (right - left)/2;
-            if(nums[mid] < nums[mid+1]) left = mid + 1;
+    public int findPeakElement(int[] nums){
+        int left = 0;
+        int right = nums.length-1;
+        while(left < right){
+            int mid = left + (right-left)/2;
+            if(nums[mid] < nums[mid+1]) left = mid+1;
             else right = mid;
         }
-        return left; 
+        return left;
+        //agar array bdhti hi rahi to last element hai peak. agr bdhti nhi rahi to peak beech me aayega mid aur right ke
+        //agar array kam hoti hi rahi to first element hai peak. agr kamti nhi rahi to peak beech me aayega mid aur left ke
     }
 }
+//  [1,2,1,3,5,6,4,2] 
 ```
 
 ---
 
 ---
 ## Quick Revision
-Given an array where adjacent elements are different, find any peak element.
-A peak element is an element that is strictly greater than its neighbors. We can solve this efficiently using binary search.
+Given an integer array `nums` where `nums[i] != nums[i+1]`, find a peak element.
+A peak element is an element that is strictly greater than its neighbors.
 
 ## Intuition
-The problem guarantees that `nums[-1] = nums[n] = -∞`. This means there must be at least one peak. If we are at an element `nums[mid]` and `nums[mid] < nums[mid+1]`, it implies that the peak must lie to the right of `mid` because the array is increasing at `mid`. Conversely, if `nums[mid] > nums[mid+1]`, then `mid` itself could be a peak, or a peak exists to its left because the array is decreasing at `mid`. This observation is the core of a binary search approach.
+The problem guarantees that `nums[i] != nums[i+1]`, which means there are no plateaus. This property is crucial. If we are at an element `nums[mid]` and `nums[mid] < nums[mid+1]`, it implies that there *must* be a peak to the right of `mid` (including `mid+1` itself, or further to the right). Why? Because the array eventually has to go down (or reach the end, which is considered a peak if it's greater than its only neighbor). Conversely, if `nums[mid] > nums[mid+1]`, there *must* be a peak to the left of or at `mid`. This observation strongly suggests a binary search approach. We can eliminate half of the search space in each step.
 
 ## Algorithm
 1. Initialize two pointers, `left` to the start of the array (index 0) and `right` to the end of the array (index `nums.length - 1`).
 2. While `left` is less than `right`:
    a. Calculate the middle index: `mid = left + (right - left) / 2`. This prevents potential integer overflow.
-   b. Compare `nums[mid]` with its right neighbor `nums[mid+1]`.
-   c. If `nums[mid] < nums[mid+1]`: This means the peak must be to the right of `mid` (inclusive of `mid+1`), so update `left = mid + 1`.
-   d. If `nums[mid] >= nums[mid+1]`: This means `mid` could be a peak, or a peak exists to its left. So, we narrow down the search space to the left half, including `mid`: update `right = mid`.
-3. When the loop terminates, `left` will be equal to `right`, and this index will point to a peak element. Return `left`.
+   b. Compare `nums[mid]` with its right neighbor `nums[mid + 1]`.
+   c. If `nums[mid] < nums[mid + 1]`: This means the peak must be to the right of `mid` (or `mid + 1` itself). So, update `left = mid + 1`.
+   d. If `nums[mid] > nums[mid + 1]`: This means `mid` could be a peak, or the peak is to its left. So, update `right = mid`.
+3. When the loop terminates, `left` will be equal to `right`. This index points to a peak element. Return `left`.
 
 ## Concept to Remember
 *   **Binary Search:** Efficiently searching a sorted or partially ordered data structure by repeatedly dividing the search interval in half.
-*   **Monotonicity:** The problem leverages the fact that if an element is smaller than its right neighbor, a peak must exist to its right. If it's larger, a peak must exist to its left or at the current position.
-*   **Edge Cases:** Understanding the implicit `nums[-1] = nums[n] = -∞` is crucial for guaranteeing a peak exists and for the binary search logic.
+*   **Monotonicity:** The problem's constraint `nums[i] != nums[i+1]` implies local monotonicity, which is key for binary search.
+*   **Edge Cases:** Handling array boundaries and the definition of a peak at the edges.
 
 ## Common Mistakes
-*   **Off-by-one errors:** Incorrectly updating `left` or `right` pointers, especially when `mid` is involved. For example, setting `right = mid - 1` when `nums[mid] > nums[mid+1]` might exclude a valid peak at `mid`.
-*   **Not handling `mid+1` boundary:** Forgetting to check if `mid+1` is within the array bounds, though the problem constraints and binary search logic usually prevent this from being an issue in this specific implementation.
-*   **Incorrect loop condition:** Using `left <= right` instead of `left < right` can lead to an infinite loop or incorrect results when `left` and `right` converge.
-*   **Returning the wrong index:** Returning `mid` directly instead of `left` (or `right`) after the loop terminates.
+*   **Incorrectly handling `mid+1`:** Accessing `nums[mid+1]` when `mid` is the last element can lead to an `ArrayIndexOutOfBoundsException`. The binary search condition `left < right` and the update `right = mid` prevent this.
+*   **Not considering the problem constraints:** Assuming the array is fully sorted when it's not. The problem only guarantees local non-equality.
+*   **Off-by-one errors in pointer updates:** Incorrectly updating `left` or `right` can lead to infinite loops or missing the peak.
+*   **Returning the wrong index:** Ensuring the final `left` (or `right`) index correctly identifies a peak.
 
 ## Complexity Analysis
 *   **Time:** O(log n) - The algorithm uses binary search, which halves the search space in each iteration.
@@ -61,57 +65,59 @@ The problem guarantees that `nums[-1] = nums[n] = -∞`. This means there must b
 ## Commented Code
 ```java
 class Solution {
-    public int findPeakElement(int[] nums) {
+    public int findPeakElement(int[] nums){
         // Initialize the left pointer to the start of the array.
         int left = 0;
         // Initialize the right pointer to the end of the array.
         int right = nums.length - 1;
 
-        // Continue the loop as long as the left pointer is less than the right pointer.
-        // This ensures we are always searching in a valid range and haven't converged.
-        while (left < right) {
+        // Continue the binary search as long as the left pointer is less than the right pointer.
+        // This ensures we are always working with a valid search space of at least two elements.
+        while(left < right){
             // Calculate the middle index. Using (right - left) / 2 prevents potential integer overflow.
             int mid = left + (right - left) / 2;
 
             // Compare the middle element with its right neighbor.
-            if (nums[mid] < nums[mid + 1]) {
-                // If the middle element is smaller than its right neighbor,
-                // it means a peak must exist to the right of mid (inclusive of mid+1).
-                // So, we discard the left half and move the left pointer to mid + 1.
+            // If nums[mid] is less than nums[mid+1], it means the peak must be to the right of mid.
+            // This is because the array is increasing at this point, and it must eventually decrease or end.
+            if(nums[mid] < nums[mid+1]){
+                // Move the left pointer to mid + 1, effectively discarding the left half including mid.
                 left = mid + 1;
-            } else {
-                // If the middle element is greater than or equal to its right neighbor,
-                // it means mid itself could be a peak, or a peak exists to its left.
-                // We discard the right half (elements after mid) and keep mid in the search space.
-                // So, we move the right pointer to mid.
+            }
+            // If nums[mid] is greater than or equal to nums[mid+1] (since nums[i] != nums[i+1], it's strictly greater),
+            // it means mid could be a peak, or the peak is to its left.
+            else {
+                // Move the right pointer to mid. We keep mid in the search space because it might be the peak.
                 right = mid;
             }
         }
-        // When the loop terminates, left == right. This index points to a peak element.
-        // The problem guarantees that a peak always exists.
+        // When the loop terminates, left == right. This index is guaranteed to be a peak element.
+        // If the array was strictly increasing, 'left' would end up at the last element.
+        // If the array was strictly decreasing, 'left' would end up at the first element.
+        // In mixed cases, it converges to a peak.
         return left;
     }
 }
 ```
 
 ## Interview Tips
-*   **Explain the binary search logic clearly:** Emphasize why `nums[mid] < nums[mid+1]` implies searching right, and `nums[mid] >= nums[mid+1]` implies searching left (or staying at `mid`).
-*   **Discuss the implicit boundary conditions:** Mention `nums[-1] = nums[n] = -∞` and how it guarantees a peak exists and simplifies the binary search.
-*   **Walk through an example:** Use a small array like `[1, 2, 3, 1]` or `[1, 2, 1, 3, 5, 6, 4]` to trace the `left`, `right`, and `mid` pointers.
-*   **Be prepared to discuss alternative approaches:** While binary search is optimal, briefly mentioning a linear scan (O(n)) and why it's less efficient can show a broader understanding.
+*   **Explain the binary search logic clearly:** Emphasize why `nums[mid] < nums[mid+1]` implies a peak to the right and `nums[mid] > nums[mid+1]` implies a peak to the left or at `mid`.
+*   **Discuss the `nums[i] != nums[i+1]` constraint:** Highlight how this simplifies the problem and guarantees a peak exists and allows for binary search.
+*   **Walk through an example:** Use `[1,2,1,3,5,6,4,2]` to show how `left` and `right` pointers move and converge.
+*   **Consider edge cases:** Briefly mention what happens if the array has only one element (it's a peak) or if the peak is at the beginning or end.
 
 ## Revision Checklist
 - [ ] Understand the definition of a peak element.
-- [ ] Recognize that binary search is applicable due to the problem's properties.
+- [ ] Recognize the applicability of binary search due to `nums[i] != nums[i+1]`.
 - [ ] Implement the binary search correctly with `left < right` condition.
 - [ ] Correctly update `left` and `right` pointers based on `nums[mid]` vs `nums[mid+1]`.
-- [ ] Understand why the final `left` (or `right`) index is the peak.
-- [ ] Analyze time and space complexity.
+- [ ] Handle potential integer overflow in `mid` calculation.
+- [ ] Verify the return value is the index of a peak element.
 
 ## Similar Problems
-*   [Search in Rotated Sorted Array](https://leetcode.com/problems/search-in-rotated-sorted-array/)
-*   [Find Minimum in Rotated Sorted Array](https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/)
-*   [Find First and Last Position of Element in Sorted Array](https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/)
+*   Search in Rotated Sorted Array
+*   Find Minimum in Rotated Sorted Array
+*   Median of Two Sorted Arrays
 
 ## Tags
 `Array` `Binary Search`
