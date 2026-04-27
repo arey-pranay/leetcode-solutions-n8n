@@ -1,17 +1,15 @@
 class Solution {
     public int singleNumber(int[] nums) {
-        int result = 0;
-        for(int i=0;i<32;i++){
-            int bitCount = 0;
-            for(int j =0; j<nums.length;j++){
-                int num = nums[j];
-                if((num& 1) == 1) bitCount++;
-                nums[j] = num>>1;
+        if (nums.length == 1) return nums[0];
+        int res = 0;
+        for (int i = 0; i < 32; i++) {
+            int ones = 0;
+            for (int j = 0; j < nums.length; j++) {
+                ones += nums[j] & 1;
+                nums[j] >>= 1;
             }
-            if(bitCount%3 == 1){
-               result += (1<<i);
-            };
+            res |= (ones % 3) << i;  // place bit at position i directly
         }
-        return result;
+        return res;
     }
 }
