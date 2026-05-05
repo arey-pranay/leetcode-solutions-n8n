@@ -37,117 +37,80 @@ class Solution {
 ---
 
 ---
+
 ## Quick Revision
-Find the length of the longest subsequence where elements are in strictly increasing order.
-Solved using dynamic programming with memoization or a binary search approach.
+Find the length of the longest increasing subsequence in an array.
+Solve it using dynamic programming with memoization.
 
 ## Intuition
-For each number `nums[i]`, we want to find the longest increasing subsequence ending *at* `nums[i]`. This subsequence can be formed by appending `nums[i]` to any existing increasing subsequence ending at `nums[j]` (where `j < i`) if `nums[j] < nums[i]`. The length of such a subsequence would be `1 + length_of_LIS_ending_at_nums[j]`. We take the maximum of these possibilities. If no such `nums[j]` exists, the longest increasing subsequence ending at `nums[i]` is just `nums[i]` itself, with length 1. The overall answer is the maximum length found across all ending positions.
+The problem can be solved by considering each element as a potential ending point for the subsequence. We keep track of the maximum length of increasing subsequence ending at each position, and finally return the maximum value seen so far. This approach works because the subproblem of finding the longest increasing subsequence ending at any given index is independent of other indices.
 
 ## Algorithm
-1. Initialize a memoization array `memo` of the same size as `nums`, filled with -1 (or any indicator that the value hasn't been computed yet). This array will store the length of the longest increasing subsequence ending at each index.
-2. Initialize a variable `ans` to `Integer.MIN_VALUE` to store the overall maximum length found.
-3. Iterate through each element `nums[i]` from `i = 0` to `nums.length - 1`.
-4. For each `i`, call a recursive helper function `func(nums, i)` to compute the length of the LIS ending at index `i`.
-5. Update `ans = Math.max(ans, func(nums, i))`.
-6. The `func(nums, i)` function:
-    a. If `memo[i]` is not -1, return `memo[i]` (result already computed).
-    b. Initialize `max` to 1 (the subsequence containing only `nums[i]` itself).
-    c. Iterate through all previous elements `nums[j]` where `j` ranges from `0` to `i - 1`.
-    d. If `nums[j] < nums[i]`, it means `nums[i]` can extend an increasing subsequence ending at `nums[j]`.
-    e. Calculate a potential new length: `temp = 1 + func(nums, j)`.
-    f. Update `max = Math.max(max, temp)`.
-    g. Store the computed `max` in `memo[i]` and return it.
-7. After the loop, return `ans`.
+1. Initialize a memo array to store the maximum length of increasing subsequence ending at each index.
+2. Fill the memo array with -1, indicating that no result has been computed yet.
+3. Iterate through the input array from left to right.
+4. For each element, recursively call `func` to find the maximum length of increasing subsequence ending at this position.
+5. Update the answer (maximum length seen so far) if the current maximum is greater than the previous best.
 
 ## Concept to Remember
-*   **Dynamic Programming (DP):** Breaking down a problem into overlapping subproblems and storing their solutions to avoid recomputation.
-*   **Memoization (Top-Down DP):** Using recursion with a cache (like an array) to store results of expensive function calls.
-*   **Subsequence vs. Substring:** A subsequence doesn't require contiguous elements, while a substring does.
+* **Memoization**: storing the results of expensive function calls and reusing them when the same inputs occur again.
+* **Dynamic Programming**: breaking down a problem into smaller subproblems, solving each one only once, and storing their solutions to avoid redundant computation.
 
 ## Common Mistakes
-*   Confusing subsequence with substring (requiring contiguous elements).
-*   Incorrectly handling the base case for the LIS length (should be at least 1 for any single element).
-*   Forgetting to check `nums[j] < nums[i]` before considering extending a subsequence.
-*   Not initializing the memoization table correctly or not checking its values before recomputing.
-*   Returning the LIS ending at the last element instead of the maximum LIS across all ending elements.
+* Not properly initializing memo array, leading to incorrect results.
+* Incorrectly implementing recursive call in `func`, resulting in infinite loops or incorrect maximum lengths.
+* Forgetting to update the answer variable with the new maximum length found.
 
 ## Complexity Analysis
-- Time: O(n^2) - reason: The outer loop iterates `n` times, and the inner loop (within `func`) also iterates up to `n` times. Each call to `func` might involve an O(n) loop, and with memoization, each `func(i)` is computed only once.
-- Space: O(n) - reason: For the memoization array `memo` of size `n`, and O(n) for the recursion call stack in the worst case.
+- Time: O(n^2) - where n is the length of input array, due to nested loops in `func`.
+- Space: O(n) - for memoization array.
 
 ## Commented Code
 ```java
 class Solution {
-    // memo array to store the length of the LIS ending at each index.
-    // Initialized with -1 to indicate that the value has not been computed yet.
-    int[] memo;
+    int[] memo; // memoization array
 
-    // Main function to find the length of the longest increasing subsequence.
-    public int lengthOfLIS(int[] nums) {
-        // Initialize the overall maximum length found so far to the smallest possible integer.
-        int ans = Integer.MIN_VALUE;
-        // Initialize the memoization array with -1.
-        memo = new int[nums.length];
-        Arrays.fill(memo,-1);
-        // Iterate through each element of the array.
-        for(int i = 0 ; i<nums.length;i++) {
-            // For each element, calculate the LIS ending at this element using the recursive function.
-            // Update the overall maximum length if the current LIS is longer.
-            ans = Math.max(ans,func(nums,i));
+    public int lengthOfLIS(int[] nums) { // main function
+        int ans = Integer.MIN_VALUE; // initialize answer to min possible value
+        memo = new int[nums.length]; // create memo array of size n
+        Arrays.fill(memo, -1); // fill with -1 to indicate no result computed yet
+
+        for (int i = 0; i < nums.length; i++) {
+            ans = Math.max(ans, func(nums, i)); // update answer if current max is greater
         }
-        // Return the overall maximum length found.
         return ans;
     }
 
-    // Recursive helper function to compute the length of the LIS ending at index 'i'.
-    public int func(int[] nums, int i){
-        // If the result for index 'i' is already computed and stored in memo, return it.
-        if(memo[i] != -1) return memo[i];
+    public int func(int[] nums, int i) { // recursive function to find max length
+        if (memo[i] != -1) return memo[i]; // check if result already computed
 
-        // Initialize the maximum length of LIS ending at 'i' to 1.
-        // This represents the subsequence containing only nums[i] itself.
-        int max = 1;
-        // Iterate through all elements before index 'i'.
-        for(int j=0;j<i;j++){
-            // If the element at index 'j' is strictly smaller than the element at index 'i',
-            // it means nums[i] can extend an increasing subsequence ending at nums[j].
-            if(nums[j] < nums[i]){
-                // Calculate the potential new length: 1 (for nums[i]) + LIS ending at nums[j].
-                // We recursively call func(nums, j) to get the LIS ending at j.
-                int temp = 1 + func(nums,j);
-                // Update 'max' if this new length is greater than the current maximum.
-                max = Math.max(max,temp);
+        int max = 1; // initialize max length to 1 (base case)
+
+        for (int j = 0; j < i; j++) {
+            if (nums[j] < nums[i]) { // if current element is larger than previous
+                int temp = 1 + memo[j]; // compute new max length by adding 1 and previous max
+                max = Math.max(max, temp); // update max length if necessary
             }
         }
-        // Store the computed maximum length for index 'i' in the memoization array.
-        // Then, return this computed maximum length.
-        return memo[i] = max;
+
+        return memo[i] = max; // store result in memo array and return it
     }
 }
 ```
 
 ## Interview Tips
-*   Clearly explain the DP state: "What is `dp[i]` or `memo[i]` representing?" In this case, it's the length of the LIS *ending* at index `i`.
-*   Walk through an example: Use a small array like `[10, 9, 2, 5, 3, 7, 101, 18]` and trace how `memo` gets filled.
-*   Discuss the time and space complexity of the DP approach and mention the possibility of an O(n log n) solution (using binary search) if time permits or if prompted.
-*   Be prepared to explain the difference between subsequence and substring.
+* Pay attention to the `memo` initialization step, as incorrect initializations can lead to wrong results.
+* Use descriptive variable names and comments to explain your code's logic.
+* Practice solving this problem on a whiteboard or paper before attempting it in an interview setting.
 
 ## Revision Checklist
-- [ ] Understand the problem statement: Longest Increasing Subsequence.
-- [ ] Identify the DP state: `memo[i]` = LIS length ending at `nums[i]`.
-- [ ] Define the recurrence relation: `memo[i] = 1 + max(memo[j])` for all `j < i` where `nums[j] < nums[i]`.
-- [ ] Handle the base case: `memo[i]` is at least 1.
-- [ ] Implement memoization to avoid recomputation.
-- [ ] Iterate through all possible ending points to find the overall maximum.
-- [ ] Analyze time and space complexity.
-- [ ] Consider the O(n log n) approach (Patience Sorting/Binary Search).
+- [ ] Implement memoization correctly.
+- [ ] Ensure recursive call in `func` is implemented accurately.
+- [ ] Verify space complexity of the solution (O(n) for memo array).
 
 ## Similar Problems
-*   Longest Increasing Subsequence II (LeetCode 1235) - Variation with constraints.
-*   Number of Longest Increasing Subsequences (LeetCode 673) - Find count of LIS.
-*   Maximum Sum Increasing Subsequence (GeeksforGeeks) - Variation with sum.
-*   Longest Common Subsequence (LeetCode 1143) - Related DP concept.
+* 72. Edit Distance (LeetCode)
+* 746. Minimum Number of Arrows to Burst Balloons (LeetCode)
 
 ## Tags
-`Array` `Dynamic Programming` `Binary Search` `Memoization`
+`Array`, `Hash Map`, `Dynamic Programming`, `Memoization`
