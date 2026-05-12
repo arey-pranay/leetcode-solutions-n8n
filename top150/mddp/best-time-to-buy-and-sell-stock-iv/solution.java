@@ -18,6 +18,15 @@ class Solution {
             else selling = Math.max(selling,  arr[i]-arr[boughtAt] + func(i+1,k-1)); //10
         }
         selling = Math.max(selling,func(start + 1, k));
-        return memo[start][k] = selling;           
+        return memo[start][k] = selling;        
+        
     }
+        
 }
+// [2,1,4,5,2,9,7] k = 2
+// 1 - 4 = 3
+// 2 - 9  = 7  , 10 
+
+
+// 1 - 5 = 4
+// 2 -9 = 7 , 11
