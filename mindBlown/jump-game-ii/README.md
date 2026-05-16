@@ -12,126 +12,136 @@
 
 ```java
 class Solution {
+    Integer[] memo;
     public int jump(int[] nums) {
-
+        int n = nums.length;
+        if(n==1) return 0;
+        int curr = 0;
+        int max = 0;
         int jumps = 0;
-        int currEnd = 0;
-        int farthest = 0;
-
-        for(int i = 0; i < nums.length - 1; i++) {
-
-            farthest = Math.max(farthest, i + nums[i]);
-
-            if(i == currEnd) {
+        for(int i=0;i<n-1;i++){
+            max = Math.max(max, i+nums[i]);
+            if(i==curr){
                 jumps++;
-                currEnd = farthest;
+                curr = max;
             }
         }
-
         return jumps;
+        // memo = new Integer[n];
+        // return canReach(nums,n-1);
     }
+    // public int canReach(int[] nums, int e){
+    //     if(e==0) return 0;
+    //     if(memo[e]!=null) return memo[e];
+    //     for(int i = 0; i<e;i++) if(i+nums[i]>=e) return memo[e] = 1+canReach(nums,i);
+    //     return 0;
+    // }
 }
-
-// class Solution {
-//     int n ;
-//     int[] memo ;
-//     public int jump(int[] nums) {
-//         n = nums.length;
-//         memo = new int[n];
-//         Arrays.fill(memo,10001);
-//         return func(0,nums);
-//     }
-//     public int func(int i , int[] nums){
-//         if(i>=n-1) return 0;
-//         if(memo[i]!=10001) return memo[i];
-//         for(int j=1;j<=nums[i];j++)  memo[i]=Math.min(memo[i],1+func(i+j,nums));
-//         return memo[i];
-//     }
-// }
 ```
 
 ---
 
 ---
 ## Quick Revision
-Given an array of non-negative integers, find the minimum number of jumps to reach the last index.
-This can be solved greedily by always jumping to the farthest reachable position.
+Given an array of non-negative integers representing jump lengths, find the minimum number of jumps to reach the last index.
+This is solved using a greedy approach by always jumping to the farthest reachable position.
 
 ## Intuition
-The core idea is to be as greedy as possible at each step. From the current position, we want to make a jump that allows us to reach the farthest possible index in the *next* step. This is because reaching farther gives us more options and potentially fewer overall jumps. We don't need to explore all possible jumps from the current position; we just need to know the maximum reach we can achieve from *any* position within our current jump's range.
+The core idea is to be as greedy as possible at each step. From the current position, we want to make a jump that allows us to reach the farthest possible index in the *next* step. This ensures we cover the maximum ground with each jump, thus minimizing the total number of jumps. We don't need to explore all possible jump combinations because the greedy choice at each step leads to the optimal solution.
 
 ## Algorithm
-1. Initialize `jumps` to 0 (the number of jumps taken).
-2. Initialize `currEnd` to 0 (the end of the current jump's reach).
-3. Initialize `farthest` to 0 (the farthest index reachable from any position within the current jump).
-4. Iterate through the array from index `i = 0` up to `nums.length - 2` (we don't need to consider the last element itself, as we've already reached it).
-5. In each iteration, update `farthest` to be the maximum of its current value and `i + nums[i]` (the farthest we can reach from the current position `i`).
-6. If the current index `i` reaches the end of the current jump's reach (`i == currEnd`):
-    a. Increment `jumps` because we are forced to make a new jump.
-    b. Update `currEnd` to `farthest`. This sets the boundary for our next jump.
-7. After the loop finishes, return `jumps`.
+1. Initialize `jumps` to 0, `current_reach` to 0, and `max_reach` to 0.
+2. Iterate through the array from index `i = 0` to `n-2` (since we don't need to jump from the last element).
+3. In each iteration, update `max_reach` to be the maximum of its current value and `i + nums[i]`. This represents the farthest index we can reach from the current position `i`.
+4. If the current index `i` is equal to `current_reach`, it means we have reached the end of our current jump's coverage.
+   a. Increment `jumps` by 1.
+   b. Update `current_reach` to `max_reach`. This sets the boundary for our next jump.
+   c. If `current_reach` is now greater than or equal to `n-1` (the last index), we have reached the end, so we can break the loop.
+5. Return `jumps`.
 
 ## Concept to Remember
-*   **Greedy Algorithms:** Making locally optimal choices at each step to achieve a globally optimal solution.
-*   **Breadth-First Search (BFS) Analogy:** The problem can be viewed as a BFS where each "level" represents a jump. We explore all reachable nodes (indices) within a jump and then move to the next level.
-*   **Range Management:** Efficiently tracking the maximum reachable index within the current jump's scope.
+*   **Greedy Algorithms:** Making the locally optimal choice at each stage to achieve a global optimum.
+*   **Breadth-First Search (BFS) Analogy:** This problem can be viewed as a BFS where each "level" represents the number of jumps. We explore all reachable positions within the current jump count to find the farthest reach for the next jump.
+*   **Dynamic Programming (DP) - Alternative:** While a greedy approach is optimal here, DP can also solve it by calculating the minimum jumps to reach each index. However, DP is less efficient for this specific problem.
 
 ## Common Mistakes
-*   **Incorrect Loop Boundary:** Iterating up to `nums.length - 1` instead of `nums.length - 2`, which might lead to an unnecessary jump count if the last element is reached exactly at `currEnd`.
-*   **Not Updating `currEnd` Correctly:** Failing to update `currEnd` to `farthest` when `i == currEnd`, which breaks the logic of defining the next jump's boundary.
-*   **Overthinking with DP/Recursion:** Trying to use dynamic programming or recursion for every possible jump, which is less efficient than the greedy approach for this specific problem.
-*   **Off-by-one errors:** Miscalculating `i + nums[i]` or the conditions for updating jumps.
+*   **Incorrect Loop Boundary:** Iterating up to `n-1` instead of `n-2` can lead to an unnecessary jump calculation from the last element.
+*   **Not Updating `current_reach` Correctly:** Forgetting to update `current_reach` to `max_reach` when `i == current_reach` will prevent the algorithm from progressing to the next jump.
+*   **Confusing `max_reach` and `current_reach`:** `max_reach` tracks the farthest possible reach from *any* position within the current jump, while `current_reach` marks the boundary of the *current* jump.
+*   **Trying to Implement DP when Greedy is Sufficient:** Overcomplicating the solution with DP when a simpler greedy approach works.
 
 ## Complexity Analysis
-*   Time: O(n) - The code iterates through the array once.
-*   Space: O(1) - Only a few variables are used, regardless of the input size.
+*   Time: O(n) - reason: We iterate through the array once.
+*   Space: O(1) - reason: We only use a few constant extra variables.
 
 ## Commented Code
 ```java
 class Solution {
-    public int jump(int[] nums) { // Define the method to find the minimum jumps.
+    // Integer[] memo; // This is for a DP approach, commented out as greedy is used.
+    public int jump(int[] nums) {
+        int n = nums.length; // Get the total number of elements in the array.
+        if(n==1) return 0; // If there's only one element, no jumps are needed.
 
-        int jumps = 0; // Initialize the count of jumps taken to 0.
-        int currEnd = 0; // Initialize the end of the current jump's reach to index 0.
-        int farthest = 0; // Initialize the farthest index reachable from any position within the current jump to 0.
+        int current_reach = 0; // This variable tracks the farthest index reachable with the current number of jumps.
+        int max_reach = 0;     // This variable tracks the farthest index reachable from any position within the current jump's range.
+        int jumps = 0;         // This variable counts the total number of jumps taken.
 
-        // Iterate through the array. We stop at nums.length - 1 because if we reach this index, we are done.
-        // The loop condition i < nums.length - 1 ensures we don't process the last element itself,
-        // as we only care about reaching it.
-        for(int i = 0; i < nums.length - 1; i++) {
+        // Iterate through the array. We stop at n-2 because we don't need to make a jump from the last element.
+        for(int i=0; i<n-1; i++){
+            // Update max_reach: calculate the farthest we can reach from the current index 'i'
+            // and take the maximum between the current max_reach and this new potential reach.
+            max_reach = Math.max(max_reach, i + nums[i]);
 
-            // Update the farthest reachable index from the current position 'i'.
-            // 'i + nums[i]' is the maximum index we can reach by jumping from 'i'.
-            farthest = Math.max(farthest, i + nums[i]);
+            // If we have reached the boundary of our current jump (current_reach)
+            if(i == current_reach){
+                jumps++; // Increment the jump count because we are starting a new jump.
+                current_reach = max_reach; // Update the boundary for the next jump to the farthest point we could reach.
 
-            // If the current index 'i' has reached the end of the current jump's reach ('currEnd').
-            // This means we must make a new jump to continue moving forward.
-            if(i == currEnd) {
-                jumps++; // Increment the jump count.
-                currEnd = farthest; // Set the end of the next jump to the farthest reachable point found so far.
-                // If currEnd reaches or exceeds the last index, we can potentially break early,
-                // but the loop condition i < nums.length - 1 handles this implicitly.
+                // Optional optimization: if the new current_reach covers or exceeds the last index, we can stop early.
+                // This check is implicitly handled by the loop condition (i < n-1) and the fact that
+                // if current_reach >= n-1, the loop will naturally terminate soon after.
+                // if (current_reach >= n - 1) {
+                //     break;
+                // }
             }
         }
-
         return jumps; // Return the total number of jumps required.
+
+        // The commented out code below represents a Dynamic Programming approach.
+        // memo = new Integer[n]; // Initialize memoization table.
+        // return canReach(nums,n-1); // Call the recursive helper function to find jumps to reach the end.
     }
+
+    // This is a recursive DP helper function (commented out).
+    // public int canReach(int[] nums, int e){
+    //     if(e==0) return 0; // Base case: if we are at index 0, 0 jumps are needed.
+    //     if(memo[e]!=null) return memo[e]; // If result for index 'e' is already computed, return it.
+    //     // Iterate through all previous indices 'i' to find a jump that can reach 'e'.
+    //     for(int i = 0; i<e;i++) {
+    //         if(i+nums[i]>=e) { // If from index 'i' we can reach or surpass index 'e'.
+    //             // The number of jumps to reach 'e' is 1 (from 'i' to 'e') plus the minimum jumps to reach 'i'.
+    //             return memo[e] = 1 + canReach(nums,i);
+    //         }
+    //     }
+    //     return 0; // Should not be reached if a solution exists (problem guarantees reachability).
+    // }
 }
 ```
 
 ## Interview Tips
-*   Explain the greedy approach clearly: Emphasize why always aiming for the farthest reach is optimal.
-*   Walk through an example: Use a small array like `[2,3,1,1,4]` and trace the values of `jumps`, `currEnd`, and `farthest` at each step.
-*   Discuss the BFS analogy: This can help illustrate the level-by-level exploration concept.
-*   Be prepared to discuss why a DP approach might be less efficient here.
+*   **Explain the Greedy Choice:** Clearly articulate *why* always jumping to the farthest reachable point is optimal. Mention that it maximizes progress per jump.
+*   **Walk Through an Example:** Use a small example array (e.g., `[2,3,1,1,4]`) to trace your algorithm's execution step-by-step, showing how `current_reach` and `max_reach` change.
+*   **Discuss the DP Alternative (Briefly):** Mention that DP is a possible approach but explain why the greedy solution is more efficient (O(n) time and O(1) space vs. O(n^2) time and O(n) space for a naive DP).
+*   **Edge Cases:** Be prepared to discuss the `n=1` case and what happens if the array is empty (though LeetCode constraints usually prevent this).
 
 ## Revision Checklist
-- [ ] Understand the problem statement: minimum jumps to reach the end.
-- [ ] Grasp the greedy strategy: maximize reach at each step.
-- [ ] Trace the algorithm with examples.
+- [ ] Understand the problem: minimum jumps to reach the end.
+- [ ] Identify the greedy strategy: maximize reach at each step.
+- [ ] Implement the `current_reach` and `max_reach` logic correctly.
+- [ ] Handle loop boundaries (`n-2`).
 - [ ] Analyze time and space complexity.
-- [ ] Identify common pitfalls (loop bounds, `currEnd` update).
-- [ ] Practice explaining the intuition and algorithm.
+- [ ] Practice explaining the greedy choice.
+- [ ] Trace execution with examples.
 
 ## Similar Problems
 *   Jump Game (LeetCode 55)
