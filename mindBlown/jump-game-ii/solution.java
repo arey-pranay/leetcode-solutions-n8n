@@ -1,37 +1,26 @@
 class Solution {
+    Integer[] memo;
     public int jump(int[] nums) {
-
+        int n = nums.length;
+        if(n==1) return 0;
+        int curr = 0;
+        int max = 0;
         int jumps = 0;
-        int currEnd = 0;
-        int farthest = 0;
-
-        for(int i = 0; i < nums.length - 1; i++) {
-
-            farthest = Math.max(farthest, i + nums[i]);
-
-            if(i == currEnd) {
+        for(int i=0;i<n-1;i++){
+            max = Math.max(max, i+nums[i]);
+            if(i==curr){
                 jumps++;
-                currEnd = farthest;
+                curr = max;
             }
         }
-
         return jumps;
+        // memo = new Integer[n];
+        // return canReach(nums,n-1);
     }
+    // public int canReach(int[] nums, int e){
+    //     if(e==0) return 0;
+    //     if(memo[e]!=null) return memo[e];
+    //     for(int i = 0; i<e;i++) if(i+nums[i]>=e) return memo[e] = 1+canReach(nums,i);
+    //     return 0;
+    // }
 }
-
-// class Solution {
-//     int n ;
-//     int[] memo ;
-//     public int jump(int[] nums) {
-//         n = nums.length;
-//         memo = new int[n];
-//         Arrays.fill(memo,10001);
-//         return func(0,nums);
-//     }
-//     public int func(int i , int[] nums){
-//         if(i>=n-1) return 0;
-//         if(memo[i]!=10001) return memo[i];
-//         for(int j=1;j<=nums[i];j++)  memo[i]=Math.min(memo[i],1+func(i+j,nums));
-//         return memo[i];
-//     }
-// }
