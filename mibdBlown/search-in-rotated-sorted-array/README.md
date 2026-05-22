@@ -40,100 +40,115 @@ class Solution {
 ---
 
 ---
-
 ## Quick Revision
-Search for a target element in a rotated sorted array.
-Use binary search to find the target element efficiently.
+Given a sorted array that has been rotated at an unknown pivot point, find the index of a given target value.
+This problem is solved using a modified binary search algorithm.
 
 ## Intuition
-The "aha moment" is realizing that we can use binary search on a rotated sorted array. This approach works because even though the array is rotated, it's still sorted, and we can take advantage of this property to eliminate half of the search space with each iteration.
+The core idea is that even though the entire array is rotated, at least one half of the array (from `start` to `mid` or from `mid` to `end`) will always be sorted. We can leverage this sorted sub-array to determine which half the `target` *could* be in, and then discard the other half. This allows us to maintain the O(log n) time complexity of binary search.
 
 ## Algorithm
-1. Initialize two pointers, `start` and `end`, to the start and end indices of the array.
-2. If the array has only one element, check if it matches the target, and return its index if so.
+1. Initialize `start` to 0 and `end` to `nums.length - 1`.
+2. Handle the edge case where the array has only one element and it matches the target.
 3. While `start` is less than `end`:
-   1. Calculate the midpoint `mid` using integer division (`start + (end-start)/2`).
-   2. Check if `nums[mid]` matches the target. If so, return its index.
-   3. Check if `nums[start]` or `nums[end]` matches the target. If so, return their indices.
-   4. Determine which half of the array is sorted by comparing `nums[start]` and `nums[mid]`.
-      * If left side is sorted:
-         - If `target` is within the range `[nums[start], nums[mid]]`, update `end` to `mid-1`.
-         - Otherwise, update `start` to `mid+1`.
-      * If right side is sorted:
-         - If `target` is within the range `[nums[mid], nums[end]]`, update `start` to `mid+1`.
-         - Otherwise, update `end` to `mid-1`.
-4. If the loop ends without finding the target, return `-1`.
+    a. Calculate `mid` using `start + (end - start) / 2` to prevent potential integer overflow.
+    b. If `nums[mid]` is the `target`, return `mid`.
+    c. Check if `nums[start]` or `nums[end]` is the `target` and return their indices if they match. This is an optimization to quickly find the target if it's at the boundaries.
+    d. Determine which half of the array is sorted:
+        i. If `nums[start] <= nums[mid]` (the left half is sorted):
+            - If the `target` is within the range of the sorted left half (`target >= nums[start]` and `target < nums[mid]`), then the `target` must be in the left half. Update `end = mid - 1`.
+            - Otherwise, the `target` must be in the right (unsorted) half. Update `start = mid + 1`.
+        ii. Else (`nums[mid] < nums[start]`, meaning the right half is sorted):
+            - If the `target` is within the range of the sorted right half (`target <= nums[end]` and `target > nums[mid]`), then the `target` must be in the right half. Update `start = mid + 1`.
+            - Otherwise, the `target` must be in the left (unsorted) half. Update `end = mid - 1`.
+4. If the loop finishes without finding the `target`, return -1.
 
 ## Concept to Remember
-* Binary search can be used on partially sorted arrays.
-* When searching in a rotated sorted array, focus on determining which half is sorted and eliminating the other half.
+*   **Binary Search:** The fundamental algorithm for searching in sorted data structures.
+*   **Divide and Conquer:** Breaking down a problem into smaller subproblems.
+*   **Identifying Sorted Sub-arrays:** Recognizing that in a rotated sorted array, at least one half is always sorted.
+*   **Edge Case Handling:** Properly managing conditions like single-element arrays or target at boundaries.
 
 ## Common Mistakes
-* Not handling edge cases, such as an empty array or a single-element array with no match.
-* Failing to update `start` and `end` correctly based on the comparison of `nums[start]` and `nums[mid]`.
-* Not checking if `nums[mid]`, `nums[start]`, or `nums[end]` matches the target before eliminating half of the search space.
+*   **Integer Overflow:** Using `(start + end) / 2` for `mid` can lead to overflow if `start` and `end` are very large. The correct way is `start + (end - start) / 2`.
+*   **Incorrect Boundary Conditions:** Mishandling the `start < end` condition or the `mid - 1` / `mid + 1` updates can lead to infinite loops or missed elements.
+*   **Not Handling the Rotated Nature:** Applying a standard binary search without accounting for the rotation will fail.
+*   **Missing Edge Cases:** Forgetting to check for single-element arrays or the target being at the `start` or `end` indices.
 
 ## Complexity Analysis
-- Time: O(log n) - The binary search algorithm eliminates half of the search space with each iteration, resulting in a logarithmic time complexity.
-- Space: O(1) - This solution uses only a constant amount of extra memory to store indices and variables.
+*   **Time:** O(log n) - The algorithm halves the search space in each iteration, similar to standard binary search.
+*   **Space:** O(1) - The algorithm uses a constant amount of extra space for variables like `start`, `end`, and `mid`.
 
 ## Commented Code
 ```java
 class Solution {
     public int search(int[] nums, int target) {
-        // Initialize two pointers, start and end, to the start and end indices of the array.
+        // Initialize the start and end pointers for binary search.
         int start = 0;
-        int end = nums.length-1;
+        int end = nums.length - 1;
 
-        // Handle edge case: if array has only one element, check if it matches the target.
-        if(nums.length==1 && nums[0]==target) return 0;
+        // Handle the edge case where the array has only one element.
+        if (nums.length == 1 && nums[0] == target) return 0;
 
-        while(start<end){
-            // Calculate the midpoint using integer division (start + (end-start)/2).
-            int mid = start + (end-start)/2;
+        // Continue the binary search as long as the start pointer is less than the end pointer.
+        while (start < end) {
+            // Calculate the middle index to avoid potential integer overflow.
+            int mid = start + (end - start) / 2;
 
-            // Check if nums[mid] matches the target. If so, return its index.
-            if(nums[mid]==target) return mid;
+            // If the middle element is the target, return its index.
+            if (nums[mid] == target) return mid;
+            // Optimization: Check if the start element is the target.
+            if (nums[start] == target) return start;
+            // Optimization: Check if the end element is the target.
+            if (nums[end] == target) return end;
 
-            // Check if nums[start] or nums[end] matches the target. If so, return their indices.
-            if(nums[start]==target) return start;
-            if(nums[end]==target) return end;
-
-            // Determine which half of the array is sorted by comparing nums[start] and nums[mid].
-            if(nums[start] <= nums[mid]){ // Left side sorted
-                // If target is within range [nums[start], nums[mid]], update end to mid-1.
-                if(target>= nums[start]  && target < nums[mid]) end = mid-1; 
-                // Otherwise, update start to mid+1 (eliminate left side).
-                else start = mid+1;
-            } else{ // Right side sorted
-                // If target is within range [nums[mid], nums[end]], update start to mid+1.
-                if(target <= nums[end] && target > nums[mid]) start = mid+1; 
-                // Otherwise, update end to mid-1 (eliminate right side).
-                else end = mid-1;
+            // Determine which half of the array is sorted.
+            if (nums[start] <= nums[mid]) { // The left half (from start to mid) is sorted.
+                // Check if the target lies within the sorted left half.
+                if (target >= nums[start] && target < nums[mid]) {
+                    // If it does, discard the right half by moving the end pointer.
+                    end = mid - 1;
+                } else {
+                    // If it doesn't, the target must be in the right (unsorted) half. Discard the left half.
+                    start = mid + 1;
+                }
+            } else { // The right half (from mid to end) is sorted.
+                // Check if the target lies within the sorted right half.
+                if (target <= nums[end] && target > nums[mid]) {
+                    // If it does, discard the left half by moving the start pointer.
+                    start = mid + 1;
+                } else {
+                    // If it doesn't, the target must be in the left (unsorted) half. Discard the right half.
+                    end = mid - 1;
+                }
             }
         }
-
-        // If the loop ends without finding the target, return -1.
+        // If the loop finishes and the target is not found, return -1.
         return -1;
     }
 }
 ```
 
 ## Interview Tips
-* Make sure to handle edge cases carefully, such as an empty array or a single-element array with no match.
-* Practice explaining your thought process and reasoning for each step of the algorithm.
-* Be prepared to discuss trade-offs between different approaches (e.g., binary search vs. linear search).
+*   **Explain the "Why":** Clearly articulate *why* one half of the array is always sorted and how you use that fact to narrow down the search.
+*   **Walk Through Examples:** Use a small rotated array (e.g., `[4, 5, 6, 7, 0, 1, 2]`) and trace the algorithm with different target values, especially those at the pivot point or boundaries.
+*   **Discuss Edge Cases:** Be prepared to discuss how your solution handles arrays with one element, arrays where the target is the first or last element, and arrays where the target is not present.
+*   **Clarify Ambiguities:** If the problem statement mentions duplicates, ask how they should be handled, as duplicates can complicate the logic. (This specific problem statement implies no duplicates, but it's a good general interview practice).
 
 ## Revision Checklist
-- [ ] Understand the problem statement and constraints.
-- [ ] Review edge cases, such as an empty array or a single-element array with no match.
-- [ ] Practice explaining your thought process and reasoning for each step of the algorithm.
-- [ ] Test the solution thoroughly to ensure it works correctly.
+- [ ] Understand the problem of searching in a rotated sorted array.
+- [ ] Implement binary search logic.
+- [ ] Correctly identify the sorted half of the array in each step.
+- [ ] Accurately determine if the target falls within the sorted half.
+- [ ] Handle boundary conditions and edge cases (single element, target at ends).
+- [ ] Ensure correct pointer updates (`start = mid + 1`, `end = mid - 1`).
+- [ ] Verify time and space complexity.
 
 ## Similar Problems
-* `Find First and Last Position in Array`: Find the first and last positions of an element in a sorted array.
-* `Search a 2D Grid`: Search for an element in a 2D grid, where each row is sorted in ascending order.
-* `Search Insert Position`: Find the position to insert an element in a sorted array.
+*   Search in Rotated Sorted Array II (handles duplicates)
+*   Find Minimum in Rotated Sorted Array
+*   Find First and Last Position of Element in Sorted Array
+*   Binary Search
 
 ## Tags
-`Array` `Hash Map` `Binary Search`
+`Array` `Binary Search`
