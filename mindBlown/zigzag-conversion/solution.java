@@ -4,7 +4,7 @@ class Solution {
         if(x==0) return s;
         
         StringBuilder sb = new StringBuilder();
-        int[] y = new int[2];
+        int[] y = new int[2]; // jumps array
         
         for(int i=0;i<numRows;i++){
             y[0] = x - 2*i;
