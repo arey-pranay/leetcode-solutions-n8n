@@ -17,7 +17,7 @@ class Solution {
         if(x==0) return s;
         
         StringBuilder sb = new StringBuilder();
-        int[] y = new int[2];
+        int[] y = new int[2]; // jumps array
         
         for(int i=0;i<numRows;i++){
             y[0] = x - 2*i;
@@ -78,119 +78,102 @@ class Solution {
 
 ---
 ## Quick Revision
-Convert a string into a zigzag pattern across a specified number of rows.
-The solution calculates the indices for each row and appends characters accordingly.
+The problem asks to convert a given string into a zigzag pattern based on a specified number of rows. The solution involves calculating the indices of characters that fall on each row and concatenating them.
 
 ## Intuition
-The core idea is to observe the pattern of character placement in the zigzag. For a given number of rows, the characters form diagonal lines. We can determine the indices of characters that belong to each row by analyzing the "cycle" length of the zigzag. The cycle length is the distance between two characters that fall on the same vertical line in the zigzag pattern.
-
-For `numRows = 3`, the pattern is:
-`P   A   H`
-`A P L S`
-`Y   I   R`
-
-Indices:
-`0   4   8`
-`1 3 5 7 9`
-`2   6   10`
-
-The distance between `0` and `4` is `4`. The distance between `1` and `3` is `2`, and between `3` and `5` is `4`.
-The full cycle length is `2 * numRows - 2`. For `numRows = 3`, this is `2 * 3 - 2 = 4`.
-For `numRows = 4`, the pattern is:
-`P     I    N`
-`A   L S  G`
-`Y A   H R`
-`P     O`
-
-Indices:
-`0     6     12`
-`1   5 7   11 13`
-`2 4   8 10`
-`3     9`
-
-The cycle length is `2 * 4 - 2 = 6`.
-The characters in row `i` are at indices `j`, `j + cycle_length`, `j + 2 * cycle_length`, etc.
-Additionally, for rows other than the first and last, there's a character on the "upward" diagonal. The distance to this character from the previous one in the same row is `cycle_length - 2 * i`.
+The core idea is to observe the pattern of character placement in the zigzag. For a given number of rows, the characters are placed in a downward diagonal, then an upward diagonal. The key insight is to identify the "cycle length" of this pattern and then, for each row, determine the indices of characters that belong to it by stepping through this cycle.
 
 ## Algorithm
-1. Handle the edge case where `numRows` is 1. In this case, the string remains unchanged, so return `s`.
-2. Calculate the "cycle length" of the zigzag pattern. This is `2 * numRows - 2`. This represents the distance between characters that align vertically in the full zigzag.
-3. Initialize an empty `StringBuilder` to store the result.
-4. Iterate through each row from `0` to `numRows - 1`.
-5. For each row `i`:
-    a. Initialize a `current_index` to `i`.
-    b. While `current_index` is less than the length of the string `s`:
-        i. Append the character at `s.charAt(current_index)` to the `StringBuilder`.
-        ii. If the current row `i` is not the first row (`i != 0`) and not the last row (`i != numRows - 1`):
-            - Calculate the index of the character on the upward diagonal: `diagonal_index = current_index + cycle_length - 2 * i`.
-            - If `diagonal_index` is within the bounds of the string `s`, append `s.charAt(diagonal_index)` to the `StringBuilder`.
-        iii. Move `current_index` to the next character in the same row, which is `current_index + cycle_length`.
-6. Convert the `StringBuilder` to a `String` and return it.
+1.  Handle the edge case where `numRows` is 1. In this case, the string remains unchanged, so return `s`.
+2.  Calculate the cycle length of the zigzag pattern. This is `2 * numRows - 2`. This represents the distance between two characters that are in the same column and on the same "downward" stroke.
+3.  Initialize an empty `StringBuilder` to store the result.
+4.  Iterate through each row from `0` to `numRows - 1`.
+5.  For each row `i`:
+    *   Calculate the primary jump (downward stroke): `jump1 = cycleLength - 2 * i`.
+    *   Calculate the secondary jump (upward stroke): `jump2 = 2 * i`.
+    *   Initialize the current index `j` to `i` (the starting character for this row).
+    *   Initialize a `temp` variable to `0` to alternate between `jump1` and `jump2`.
+    *   While `j` is within the bounds of the string `s`:
+        *   Append the character at index `j` to the `StringBuilder`.
+        *   If `temp` is 0 (meaning we are on a downward stroke or the first character of a row), the next jump is `jump1`.
+        *   If `temp` is 1 (meaning we are on an upward stroke), the next jump is `jump2`.
+        *   Update `j` by adding the appropriate jump.
+        *   Toggle `temp` using `temp = temp ^ 1` to switch between jumps.
+6.  Return the string representation of the `StringBuilder`.
 
 ## Concept to Remember
-*   **String Manipulation:** Efficiently building strings using `StringBuilder` to avoid repeated object creation.
-*   **Pattern Recognition:** Identifying and generalizing the arithmetic progression of indices based on the zigzag structure.
-*   **Edge Case Handling:** Properly addressing scenarios like `numRows = 1`.
+*   **Pattern Recognition:** Identifying repeating patterns in sequences or grids is crucial for many algorithmic problems.
+*   **Index Manipulation:** Carefully calculating and managing indices is key to correctly accessing elements in strings or arrays.
+*   **Cycle Length:** Understanding the repeating unit or cycle in a pattern helps in devising efficient traversal strategies.
+*   **Bitwise XOR for Toggling:** Using `temp = temp ^ 1` is an efficient way to toggle between 0 and 1.
 
 ## Common Mistakes
-*   **Incorrect Cycle Length Calculation:** Miscalculating `2 * numRows - 2` or not handling `numRows = 1` where the cycle length would be 0.
-*   **Off-by-One Errors in Indexing:** Errors in calculating the `diagonal_index` or in the main `current_index` increment.
-*   **Not Checking Bounds for Diagonal Characters:** Appending characters from `diagonal_index` without verifying if it's within the string's length.
-*   **Using `String` concatenation instead of `StringBuilder`:** This leads to poor performance due to excessive object creation.
+*   **Off-by-one errors:** Incorrectly calculating the cycle length or the jump distances can lead to missing or extra characters.
+*   **Handling edge rows:** The first and last rows have different jump patterns (only one type of jump effectively), which can be a source of errors if not handled separately or implicitly by the jump calculation.
+*   **Incorrectly alternating jumps:** Failing to switch between the downward and upward jumps at the right times will result in an incorrect zigzag pattern.
+*   **Not handling `numRows = 1`:** This is a common edge case that should be explicitly checked to avoid division by zero or incorrect calculations.
+*   **Integer overflow:** While less likely with typical string lengths, for extremely long strings and large `numRows`, intermediate calculations could theoretically overflow if not careful (though Java's `int` is usually sufficient here).
 
 ## Complexity Analysis
-- Time: O(N) - reason: We iterate through the string `s` once to append characters to the `StringBuilder`. Each character is visited and appended a constant number of times.
-- Space: O(N) - reason: The `StringBuilder` stores the converted string, which can be up to the length of the original string `s`.
+- Time: O(N) - where N is the length of the input string `s`. We iterate through each character of the string exactly once to append it to the `StringBuilder`. The outer loop runs `numRows` times, but the inner `while` loop collectively processes all N characters.
+- Space: O(N) - for the `StringBuilder` which stores the resulting string. In the worst case, the `StringBuilder` will hold all N characters.
 
 ## Commented Code
 ```java
 class Solution {
     public String convert(String s, int numRows) {
-        // Calculate the distance between characters that start a new "column" in the zigzag pattern.
-        // For numRows = 3, this is 2*3 - 2 = 4. (e.g., indices 0, 4, 8...)
-        // For numRows = 4, this is 2*4 - 2 = 6. (e.g., indices 0, 6, 12...)
-        int cycleLen = 2 * numRows - 2;
+        // Calculate the cycle length of the zigzag pattern.
+        // This is the distance between two characters that are in the same column and on the same downward stroke.
+        // For numRows = 3, cycle is 2*3 - 2 = 4. (e.g., 0, 4, 8...)
+        // For numRows = 4, cycle is 2*4 - 2 = 6. (e.g., 0, 6, 12...)
+        int cycleLen = numRows + numRows - 2;
 
-        // If numRows is 1, the zigzag pattern is just a straight line, so return the original string.
-        // Also handles cases where numRows is 0 or negative, though problem constraints usually prevent this.
-        if (cycleLen == 0) { // This condition is equivalent to numRows == 1
+        // If numRows is 1, the string doesn't change, so return it directly.
+        // This also prevents division by zero if cycleLen becomes 0 (when numRows = 1).
+        if (cycleLen == 0) {
             return s;
         }
 
-        // Use StringBuilder for efficient string concatenation.
+        // Use a StringBuilder for efficient string concatenation.
         StringBuilder sb = new StringBuilder();
 
-        // Iterate through each row of the zigzag pattern.
+        // Iterate through each row from 0 to numRows - 1.
         for (int i = 0; i < numRows; i++) {
-            // For each row 'i', we will append characters that fall on this row.
-            // 'j' represents the index of the character in the original string 's'.
-            // We start with the first character in this row, which is at index 'i'.
-            int j = i;
+            // Calculate the primary jump (downward stroke).
+            // For row 0, this is cycleLen. For row numRows-1, this is cycleLen.
+            // For intermediate rows, this is cycleLen - 2*i.
+            int jump1 = cycleLen - 2 * i;
 
-            // Loop as long as the current index 'j' is within the bounds of the string 's'.
+            // Calculate the secondary jump (upward stroke).
+            // This jump is only relevant for intermediate rows.
+            // For row 0, this is 0. For row numRows-1, this is cycleLen.
+            // For intermediate rows, this is 2*i.
+            int jump2 = 2 * i;
+
+            // Initialize the current index 'j' to the starting character of the current row 'i'.
+            int j = i;
+            // 'temp' is used to alternate between jump1 and jump2.
+            // 0 means use jump1, 1 means use jump2.
+            int temp = 0;
+
+            // While the current index 'j' is within the bounds of the string 's'.
             while (j < s.length()) {
-                // Append the character at the current index 'j' to our result.
+                // Append the character at the current index 'j' to the StringBuilder.
                 sb.append(s.charAt(j));
 
-                // For rows that are not the first (i=0) or the last (i=numRows-1),
-                // there's an additional character on the "upward" diagonal.
-                if (i != 0 && i != numRows - 1) {
-                    // Calculate the index of this diagonal character.
-                    // It's 'cycleLen' steps away from the previous character in the same row,
-                    // minus '2*i' because the diagonal character is '2*i' steps "up" from the next vertical character.
-                    int diagonalIndex = j + cycleLen - 2 * i;
-
-                    // Check if this diagonal index is still within the bounds of the string.
-                    if (diagonalIndex < s.length()) {
-                        // If it is, append this diagonal character.
-                        sb.append(s.charAt(diagonalIndex));
-                    }
+                // Determine the next jump based on 'temp'.
+                if (temp == 0) {
+                    // If temp is 0, we are on a downward stroke (or first char of row).
+                    // The next jump is jump1.
+                    j += jump1;
+                } else {
+                    // If temp is 1, we are on an upward stroke.
+                    // The next jump is jump2.
+                    j += jump2;
                 }
-
-                // Move to the next character that belongs to this row.
-                // This is done by adding the 'cycleLen' to the current index 'j'.
-                // This jumps to the next character on the "downward" diagonal.
-                j += cycleLen;
+                // Toggle 'temp' to switch between jump1 and jump2 for the next iteration.
+                // temp ^ 1 flips 0 to 1 and 1 to 0.
+                temp = temp ^ 1;
             }
         }
 
@@ -201,25 +184,27 @@ class Solution {
 ```
 
 ## Interview Tips
-*   **Visualize the Pattern:** Before coding, draw out the zigzag pattern for small `numRows` (e.g., 3 or 4) and a sample string. This helps in understanding the index relationships.
-*   **Explain the Cycle Length:** Clearly articulate how `2 * numRows - 2` is derived and why it's crucial for calculating character positions.
-*   **Handle Middle Rows Carefully:** Emphasize the logic for adding the diagonal characters in the intermediate rows, as this is a common point of confusion.
-*   **Discuss Alternative Approaches (Optional but good):** Briefly mention that a row-by-row simulation approach (creating `numRows` strings and appending characters) is also possible, but the current index-based approach is more efficient in terms of space.
+1.  **Visualize the Pattern:** Before coding, draw out the zigzag pattern for a few examples (e.g., `s = "PAYPALISHIRING", numRows = 3` and `numRows = 4`). This helps in understanding the index relationships.
+2.  **Explain the Cycle Length:** Clearly articulate how you derived the `cycleLen` (`2 * numRows - 2`) and why it's important for calculating jumps.
+3.  **Handle Edge Cases:** Explicitly mention and handle the `numRows = 1` case. Also, discuss how the jump calculations implicitly handle the first and last rows correctly.
+4.  **Step-by-Step Traversal:** Walk through the algorithm with an example, showing how `j` and `temp` change for each character appended. This demonstrates a clear understanding of the logic.
+5.  **Alternative Approach (Row by Row):** Briefly mention that another approach is to create `numRows` separate `StringBuilder` objects, iterate through the string, and append characters to the correct `StringBuilder` based on the current row and direction. This shows breadth of knowledge.
 
 ## Revision Checklist
 - [ ] Understand the zigzag pattern and how characters are placed.
-- [ ] Correctly calculate the cycle length: `2 * numRows - 2`.
-- [ ] Handle the `numRows = 1` edge case.
+- [ ] Calculate the cycle length correctly (`2 * numRows - 2`).
 - [ ] Implement the logic for iterating through rows.
-- [ ] Implement the logic for calculating the main character index for each row.
-- [ ] Implement the logic for calculating and appending the diagonal character for intermediate rows.
-- [ ] Ensure all index calculations are within string bounds.
-- [ ] Use `StringBuilder` for efficient string construction.
+- [ ] Correctly calculate the two types of jumps (downward and upward).
+- [ ] Use a mechanism (like `temp ^ 1`) to alternate between jumps.
+- [ ] Handle the `numRows = 1` edge case.
+- [ ] Ensure all characters are appended in the correct order.
+- [ ] Analyze time and space complexity.
 
 ## Similar Problems
-*   [14. Longest Common Prefix](https://leetcode.com/problems/longest-common-prefix/) (Different, but involves string pattern analysis)
-*   [58. Length of Last Word](https://leetcode.com/problems/length-of-last-word/) (Simple string manipulation)
-*   [6. ZigZag Conversion](https://leetcode.com/problems/zigzag-conversion/) (This is the problem itself)
+*   Convert BST to Sorted Doubly Linked List
+*   Spiral Matrix
+*   Matrix Diagonal Traverse
+*   Complex Number Multiplication
 
 ## Tags
-`String` `Math`
+`String` `Math` `Simulation`
