@@ -1,17 +1,20 @@
 class Solution {
     public int singleNumber(int[] nums) {
-        if(nums.length == 1) return nums[0];
-        int res = 0;
-        for(int i=0;i<32;i++){
+        int ans = 0;
+        for(int i=0;i<=31;i++){
             int ones = 0;
-            for(int j=0;j<nums.length;j++){
-                ones += nums[j]&1;
-                nums[j]>>=1;
-            } 
-            res = (res | ((ones%3) << i)); // res ke right se ith bit pe 1 ya 0 rkhna hai
+            for(int j=0; j<nums.length;j++){
+                int lastbit = nums[j] & 1;
+                if(lastbit==1) ones++;
+                nums[j] >>= 1;
+            }
+            if(ones % 3 != 0) ans = ans | 1<<i;
         }
-        // 000001 | (1<<2 ) -> 00001 | (100) -> 101 
-        return res;
+        return ans;
     }
 }
-
+// Inside the inner loop:
+//  for(int num : nums){
+//      num >>= 1;
+//      does nothing useful because num is just a copy from the enhanced for-loop.
+// therefore I used a normal for-loop instead of for-each loop.
