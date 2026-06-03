@@ -4,7 +4,7 @@
 **Language:** Java  
 **Tags:** `Array` `Sorting`  
 **Time:** O(N log N)  
-**Space:** O(N)
+**Space:** O(1)
 
 ---
 
@@ -14,21 +14,17 @@
 class Solution {
     public int[][] merge(int[][] intervals) {
         Arrays.sort(intervals,(a,b)->a[0]-b[0]);
-        ArrayList<int[]> ans = new ArrayList<>();
-        int n = intervals.length;
-        int j = 0;
-        ans.add(intervals[0]);
+        int curr = 0;
+        int  n = intervals.length;
         for(int i=1;i<n;i++){
-            int[] curr = ans.get(j);
-            int[] next = intervals[i];
-            if(curr[1] > next[1]) i+=0;
-            else if(curr[1] >= next[0])curr[1]=next[1];
-            else{ans.add(next);j++;} 
+            if(intervals[curr][1] >= intervals[i][0]){ // merge
+                intervals[curr][1] = Math.max(intervals[i][1], intervals[curr][1]);
+            } else {
+                curr++;
+                intervals[curr] = intervals[i]; // copy it ahead kyuki uspe updated intervals aana chaiye for later comparison(s)
+            }
         }
-        int[][] arr = new int[ans.size()][2];
-        int i=0;
-        for(int[] temp : ans) arr[i] = ans.get(i++);
-        return arr;
+        return Arrays.copyOfRange(intervals,0,curr+1);
     }
 }
 ```
@@ -38,38 +34,39 @@ class Solution {
 ---
 ## Quick Revision
 Given a collection of intervals, merge all overlapping intervals.
-Sort intervals by start time and iterate, merging if the current interval overlaps with the last merged one.
+Sort intervals by start time and iterate, merging if overlap exists.
 
 ## Intuition
-The key insight is that if we sort the intervals by their start times, we only need to consider merging the current interval with the *last* merged interval. If the current interval's start time is less than or equal to the end time of the last merged interval, they overlap. We then extend the end time of the last merged interval to be the maximum of its current end time and the current interval's end time. If they don't overlap, the current interval starts a new, non-overlapping interval.
+The core idea is that if we process intervals in sorted order of their start times, we only need to consider the current interval and the *last merged interval*. If the current interval overlaps with the last merged interval, we extend the last merged interval. Otherwise, the current interval starts a new, non-overlapping interval. This greedy approach works because sorting ensures we're always looking at the earliest possible start times.
 
 ## Algorithm
-1. Sort the input `intervals` array based on the start times of the intervals.
-2. Initialize an empty list `mergedIntervals` to store the non-overlapping intervals.
-3. If the input `intervals` is empty, return an empty 2D array.
-4. Add the first interval from the sorted `intervals` to `mergedIntervals`.
-5. Iterate through the sorted `intervals` starting from the second interval.
-6. For each current interval, compare its start time with the end time of the last interval in `mergedIntervals`.
-7. If the current interval overlaps with the last merged interval (i.e., `current_start <= last_merged_end`):
-    a. Update the end time of the last merged interval to be the maximum of its current end time and the current interval's end time (`last_merged_end = max(last_merged_end, current_end)`).
-8. If the current interval does not overlap:
-    a. Add the current interval to `mergedIntervals`.
-9. Convert the `mergedIntervals` list back into a 2D array and return it.
+1. Sort the input `intervals` array based on the start time of each interval.
+2. Initialize a variable `curr` to 0, representing the index of the last merged interval.
+3. Iterate through the sorted `intervals` array starting from the second interval (index 1).
+4. For each interval `intervals[i]`:
+    a. Check if it overlaps with the current merged interval `intervals[curr]`. Overlap occurs if `intervals[curr][1]` (end of current merged) is greater than or equal to `intervals[i][0]` (start of current interval).
+    b. If they overlap:
+        i. Update the end time of the current merged interval `intervals[curr][1]` to be the maximum of its current end time and the end time of `intervals[i]`. This effectively extends the merged interval.
+    c. If they do not overlap:
+        i. Increment `curr` to point to the next available slot for a new merged interval.
+        ii. Copy the current interval `intervals[i]` to `intervals[curr]`. This is because `intervals[curr]` will now represent the start of a new merged interval, and subsequent intervals will be compared against it.
+5. After the loop, the merged intervals are stored in the `intervals` array from index 0 up to `curr`.
+6. Return a new array containing the merged intervals, from index 0 to `curr` (inclusive).
 
 ## Concept to Remember
-*   **Sorting:** Efficiently ordering data is crucial for many interval problems.
-*   **Greedy Approach:** Making the locally optimal choice at each step leads to a globally optimal solution.
-*   **Interval Overlap Condition:** Understanding how to mathematically determine if two intervals intersect.
+*   **Greedy Algorithms:** Making locally optimal choices at each step to achieve a global optimum.
+*   **Sorting:** Essential for enabling efficient comparison and merging of intervals.
+*   **In-place Modification:** The algorithm modifies the input array to store merged intervals, optimizing space.
 
 ## Common Mistakes
-*   Forgetting to sort the intervals first, which breaks the greedy logic.
-*   Incorrectly handling the overlap condition (e.g., using `<` instead of `<=`).
-*   Modifying the original `intervals` array in place when it's not intended or leads to complex logic.
-*   Not correctly updating the end time of the merged interval when an overlap occurs.
+*   **Not Sorting:** Failing to sort the intervals by their start times will lead to incorrect merging logic.
+*   **Incorrect Overlap Condition:** Using `<` instead of `>=` for the end of the current merged interval and the start of the next interval.
+*   **Handling the Last Merged Interval:** Not correctly updating the end of the `intervals[curr]` when merging, or not correctly advancing `curr` when a new interval starts.
+*   **Returning the Correct Range:** Returning the entire original array instead of the portion containing the merged intervals.
 
 ## Complexity Analysis
-*   **Time:** O(N log N) - due to sorting the intervals. The iteration through the sorted intervals takes O(N) time.
-*   **Space:** O(N) - in the worst case, if no intervals overlap, the `mergedIntervals` list will store all N intervals. If we consider the output array as part of space complexity, it's O(N). If not, it's O(1) if we modify in place (though the provided solution uses extra space).
+*   **Time:** O(N log N) - due to the sorting step, where N is the number of intervals. The iteration is O(N).
+*   **Space:** O(1) - if we consider the space used by the output array as not part of the auxiliary space. If the output array is considered, it's O(N) in the worst case (no intervals merge). The sorting might use O(log N) or O(N) space depending on the implementation.
 
 ## Commented Code
 ```java
@@ -78,76 +75,49 @@ class Solution {
         // Sort the intervals based on their start times. This is crucial for the greedy approach.
         Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
 
-        // Use an ArrayList to store the merged intervals because its size can grow dynamically.
-        ArrayList<int[]> ans = new ArrayList<>();
-        int n = intervals.length; // Get the total number of intervals.
-
-        // If there are no intervals, return an empty 2D array.
-        if (n == 0) {
-            return new int[0][0];
-        }
-
-        // Add the first interval to our result list to start the merging process.
-        ans.add(intervals[0]);
-        // 'j' will track the index of the last merged interval in the 'ans' list.
-        int j = 0;
+        // 'curr' tracks the index of the last merged interval. We start with the first interval.
+        int curr = 0;
+        // Get the total number of intervals.
+        int n = intervals.length;
 
         // Iterate through the intervals starting from the second one.
         for (int i = 1; i < n; i++) {
-            // Get the last merged interval from our 'ans' list.
-            int[] curr = ans.get(j);
-            // Get the current interval we are considering from the sorted input.
-            int[] next = intervals[i];
-
-            // Check for overlap: if the current interval's end is greater than the last merged interval's end.
-            // This condition is slightly simplified in the original code. A more explicit check is:
-            // if (curr[1] >= next[0]) { // Overlap detected
-            //     curr[1] = Math.max(curr[1], next[1]); // Merge by extending the end time
-            // } else { // No overlap
-            //     ans.add(next); // Add the current interval as a new, separate interval
-            //     j++; // Increment 'j' to point to this new last merged interval
-            // }
-
-            // The original code's logic:
-            // if(curr[1] > next[1]) i+=0; // This line is redundant and doesn't affect logic. It implies if the current merged interval ends *after* the next interval, no merge is needed for the end time.
-            // else if(curr[1] >= next[0])curr[1]=next[1]; // If the current merged interval's end is greater than or equal to the next interval's start, they overlap. Update the current merged interval's end to be the maximum of its current end and the next interval's end.
-            // else{ans.add(next);j++;} // If there's no overlap (next interval starts after current merged interval ends), add the next interval as a new merged interval and advance 'j'.
-
-            // Corrected and clearer logic based on the original intent:
-            if (curr[1] >= next[0]) { // If the last merged interval overlaps with the current interval
-                curr[1] = Math.max(curr[1], next[1]); // Extend the end of the last merged interval
-            } else { // If there is no overlap
-                ans.add(next); // Add the current interval as a new, separate merged interval
-                j++; // Move 'j' to point to this newly added interval
+            // Check if the current interval 'intervals[i]' overlaps with the last merged interval 'intervals[curr]'.
+            // Overlap occurs if the end of the last merged interval is greater than or equal to the start of the current interval.
+            if (intervals[curr][1] >= intervals[i][0]) { // merge
+                // If there's an overlap, merge them by extending the end of the last merged interval.
+                // The new end is the maximum of the current merged interval's end and the current interval's end.
+                intervals[curr][1] = Math.max(intervals[i][1], intervals[curr][1]);
+            } else {
+                // If there's no overlap, the current interval 'intervals[i]' starts a new merged interval.
+                // Increment 'curr' to point to the next available slot for a new merged interval.
+                curr++;
+                // Copy the current interval 'intervals[i]' to the new 'curr' position.
+                // This is because 'intervals[curr]' will now represent the start of a new merged interval,
+                // and subsequent intervals will be compared against it.
+                intervals[curr] = intervals[i];
             }
         }
-
-        // Convert the ArrayList of merged intervals back into a 2D array for the return type.
-        int[][] arr = new int[ans.size()][2];
-        int i = 0;
-        // Iterate through the ArrayList and copy each interval into the result array.
-        for (int[] temp : ans) {
-            arr[i] = ans.get(i++); // Copy the interval and increment index 'i'
-        }
-        // Return the final array of merged intervals.
-        return arr;
+        // After iterating through all intervals, the merged intervals are stored from index 0 to 'curr'.
+        // Create a new array containing only the merged intervals.
+        return Arrays.copyOfRange(intervals, 0, curr + 1);
     }
 }
 ```
 
 ## Interview Tips
-*   Clearly explain your sorting step and why it's necessary.
-*   Walk through an example on the whiteboard to demonstrate the merging logic.
-*   Be prepared to discuss edge cases like empty input or intervals that are completely contained within others.
-*   If asked about in-place modification, consider how you might achieve that (though it's often more complex and less readable).
+*   **Explain the Sorting:** Emphasize why sorting by start time is the critical first step and how it enables the greedy approach.
+*   **Walk Through an Example:** Use a small example like `[[1,3],[2,6],[8,10],[15,18]]` to demonstrate the merging process step-by-step.
+*   **Discuss Edge Cases:** Mention what happens with an empty input array, an array with a single interval, or intervals that are completely contained within others.
+*   **Clarify Space Complexity:** Be ready to discuss whether the output array counts towards space complexity and the implications of in-place modification.
 
 ## Revision Checklist
-- [ ] Understand the problem statement for merging overlapping intervals.
-- [ ] Implement sorting intervals by start time.
-- [ ] Correctly identify overlapping intervals.
-- [ ] Implement the logic to merge overlapping intervals by updating the end time.
-- [ ] Handle non-overlapping intervals by adding them as new merged intervals.
-- [ ] Convert the result back to the required 2D array format.
+- [ ] Understand the problem: merging overlapping intervals.
+- [ ] Recognize the need for sorting by start time.
+- [ ] Implement the greedy merging logic correctly.
+- [ ] Handle the update of the last merged interval's end.
+- [ ] Correctly advance the pointer for new, non-overlapping intervals.
+- [ ] Return the correct sub-array of merged intervals.
 - [ ] Analyze time and space complexity.
 
 ## Similar Problems
