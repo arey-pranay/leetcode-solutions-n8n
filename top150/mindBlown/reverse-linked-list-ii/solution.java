@@ -19,18 +19,18 @@ class Solution {
         System.out.println(start.val);
         
         ListNode curr = start.next;
-        ListNode near = null; // 3
-        ListNode r = null; //2
+        ListNode near = null; 
+        ListNode prev = null; 
         
         for(int i=left;i<=right;i++){
-            near = curr.next; // 2 -> 4
-            curr.next = r; // 3 -> 2
-            r = curr;  //  1-> 3
-            curr = near; // near = 4
+            near = curr.next; 
+            curr.next = prev; 
+            prev = curr;  
+            curr = near; 
         }
         
         ListNode l = start.next;
-        start.next = r;
+        start.next = prev;
         l.next = curr;
         
         return temp.next;
