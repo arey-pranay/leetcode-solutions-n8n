@@ -1,53 +1,25 @@
-//slow-fast two pointer. one-pass approach.
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode() {}
+ *     ListNode(int val) { this.val = val; }
+ *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+ * }
+ */
 class Solution {
     public ListNode removeNthFromEnd(ListNode head, int n) {
-        ListNode res = new ListNode(0, head);
-        ListNode dummy = res;
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+        func(dummy,0,n);
+        return dummy.next;
+    }
+    private int func(ListNode head, int curr,int n){
+        if(head==null) return 0;
+        else curr = 1 + func(head.next,curr,n);
 
-        for (int i = 0; i < n; i++) {
-            head = head.next;
-        }
-
-        while (head != null) {
-            head = head.next;
-            dummy = dummy.next;
-        }
-
-        dummy.next = dummy.next.next;
-
-        return res.next;        
+        if(curr == n+1) head.next = head.next.next;
+        return curr;
     }
 }
-
-// /**
-//  * Definition for singly-linked list.
-//  * public class ListNode {
-//  *     int val;
-//  *     ListNode next;
-//  *     ListNode() {}
-//  *     ListNode(int val) { this.val = val; }
-//  *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }
-//  * }
-//  */
-// class Solution {
-//     public ListNode removeNthFromEnd(ListNode head, int n) {
-//         if(head==null) return head;
-
-//         int total = 0;
-//         ListNode temp = head;
-//         while(temp!=null){
-//             temp = temp.next;
-//             total++;
-//         }
-
-//         temp = head;
-//         int toRemove = total-n-1;
-//         if(toRemove<0) return head.next; //first node
-
-//         for(int i=0;i<toRemove;i++) temp = temp.next;
-//         if(temp.next == null) temp = null; //last node
-//         else temp.next = temp.next.next;
-
-//         return head;
-//     }
-// }
