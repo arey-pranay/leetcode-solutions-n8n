@@ -4,7 +4,7 @@
 **Language:** Java  
 **Tags:** `Hash Table` `Linked List` `Design` `Doubly-Linked List`  
 **Time:** See complexity section  
-**Space:** O(N)
+**Space:** O(capacity)
 
 ---
 
@@ -12,85 +12,71 @@
 
 ```java
 class LRUCache {
-    class Node {
-        int key;
-        int value;
+    class Node{
         Node next;
         Node prev;
-        
-        // Constructor
-        public Node(int x, int y) {
-            this.key = x;
-            this.value = y;
-            this.next = null; // next pointer initially null
-            this.prev = null; // previous pointer initially null
+        int key;
+        int value;
+        Node(int key, int value){
+            this.value = value;
+            this.key = key;
+            this.next = null;
+            this.prev = null;
         }
     }
-
-    HashMap <Integer,Node> map ;
-    int capacity ; 
+    HashMap<Integer,Node> hm;
+    int capacity;
     Node head;
     Node tail;
-
     public LRUCache(int capacity) {
-        this.capacity = capacity;
-        this.map = new HashMap<>();
-        this.head = null;
-        this.tail = null;        
+        this.capacity = capacity; 
+        hm= new HashMap<>();
+        
     }
     
     public int get(int key) {
-        if(map.containsKey(key)){
-            Node needed = map.get(key);
-            if(needed.next == null) return needed.value;
-            removeNode(needed);
-            addAtTail(needed);
-            return needed.value;
-        }
-        return -1;
-    }
-
-    public void put(int key, int value) {
-        if(map.containsKey(key)){
-            Node toUpdate = map.get(key);
-            toUpdate.value = value;
-            removeNode(toUpdate);
-            addAtTail(toUpdate);
-        }
-        else {
-           if(capacity<=map.size()){
-            map.remove(head.key);
-            removeNode(head);
-           }
-           Node toAdd = new Node(key,value);
-           map.put(key,toAdd);
-           addAtTail(toAdd);
-        }
-       
+        if(!hm.containsKey(key)) return -1;
+        Node x = hm.get(key);
+        remove(x);
+        putLast(x);
+        return x.value;
     }
     
-    public void addAtTail(Node n){
-        n.next=null;
-        // We get a lawaris node, we mark its prev as current tail, attach tail's next to the lawaris node
-        // and now our tail moves ahead and that lawaris node is our tail
-        if (head == null) {
-            head = n;
-            tail = n;
-        } else{
-            n.prev = tail;
-            tail.next = n;
+    public void put(int key, int value) {
+        if(hm.containsKey(key)){
+            Node old = hm.get(key);
+            old.value = value;
+            remove(old);
+            putLast(old);
+        } else {
+            if(hm.size()==capacity){
+                hm.remove(head.key);   
+                remove(head);
+            }
+            Node temp =new Node(key,value);
+            putLast(temp);
+            hm.put(key,temp);
+        }
+    }
+    public void remove(Node x){
+        if(x.prev==null) head = x.next;
+        else x.prev.next = x.next;
+
+        if(x.next==null) tail = x.prev;
+        else x.next.prev = x.prev;
+    }
+    public void putLast(Node x){
+        x.next = null;
+        if(tail==null){
+            head = tail = x;
+            x.prev = null;
+        }else{
+            tail.next = x;
+            x.prev = tail;
             tail = tail.next;
         }
     }
-    public void removeNode(Node needed) { 
-        if(needed.prev == null) head = needed.next;
-        else needed.prev.next = needed.next;
-        if(needed.next == null) tail = needed.prev;
-        else needed.next.prev = needed.prev;
-    }
-    
 }
-
 /**
  * Your LRUCache object will be instantiated and called as such:
  * LRUCache obj = new LRUCache(capacity);
@@ -103,173 +89,171 @@ class LRUCache {
 
 ---
 ## Quick Revision
-Implement a cache that evicts the least recently used item when it reaches capacity.
-Use a hash map for O(1) lookups and a doubly linked list to maintain the order of usage.
+This problem asks to implement a Least Recently Used (LRU) cache with a fixed capacity.
+We solve it using a combination of a HashMap for O(1) lookups and a Doubly Linked List to maintain the order of usage.
 
 ## Intuition
-The core idea is to keep track of which items were used most recently and which were used least recently. A hash map allows us to quickly find any item by its key. However, a hash map alone doesn't tell us the order of usage. To maintain this order efficiently, a doubly linked list is perfect. The head of the list will represent the least recently used item, and the tail will represent the most recently used. When an item is accessed (`get`) or added/updated (`put`), we move it to the tail of the list. If the cache is full and we need to add a new item, we remove the item at the head of the list.
+The core idea is that when we access or add an item, it becomes the "most recently used." Conversely, when the cache is full and we need to evict an item, we remove the "least recently used" one. A HashMap allows us to quickly find any item by its key. However, a HashMap alone doesn't maintain order. A Doubly Linked List is perfect for this because we can efficiently move nodes to the end (most recently used) and remove nodes from the beginning (least recently used) in O(1) time. The HashMap will store references to the nodes in the Doubly Linked List.
 
 ## Algorithm
-1.  **Data Structures**:
-    *   A `HashMap` to store `key -> Node` mappings for O(1) access.
-    *   A doubly linked list to maintain the order of usage. Each node in the list will store the key and value.
-    *   `head` and `tail` pointers for the doubly linked list. `head` points to the least recently used, `tail` to the most recently used.
-
-2.  **`LRUCache(int capacity)` Constructor**:
-    *   Initialize the `capacity`.
-    *   Initialize the `HashMap`.
-    *   Initialize `head` and `tail` to `null`.
-
-3.  **`get(int key)` Method**:
-    *   Check if the `key` exists in the `HashMap`.
-    *   If not, return `-1`.
-    *   If it exists:
-        *   Retrieve the `Node` from the `HashMap`.
-        *   **Crucially**: Move this `Node` to the tail of the doubly linked list (making it the most recently used). This involves removing it from its current position and adding it to the tail.
-        *   Return the `value` of the `Node`.
-
-4.  **`put(int key, int value)` Method**:
+1.  **Initialization**:
+    *   Create a `HashMap` to store `key -> Node` mappings.
+    *   Initialize `capacity`.
+    *   Initialize `head` and `tail` pointers for the Doubly Linked List (initially `null`).
+2.  **`get(key)` operation**:
+    *   Check if the `key` exists in the `HashMap`. If not, return `-1`.
+    *   If the `key` exists, retrieve the corresponding `Node` from the `HashMap`.
+    *   **Move to front**: Remove this `Node` from its current position in the Doubly Linked List.
+    *   **Add to front**: Add this `Node` to the end (tail) of the Doubly Linked List.
+    *   Return the `value` of the `Node`.
+3.  **`put(key, value)` operation**:
     *   Check if the `key` already exists in the `HashMap`.
-    *   If it exists:
-        *   Retrieve the `Node`.
-        *   Update its `value`.
-        *   Move this `Node` to the tail of the doubly linked list.
-    *   If it does not exist:
-        *   Check if the `HashMap` size is equal to `capacity`.
-        *   If the cache is full:
-            *   Remove the `head` node (least recently used) from the `HashMap`.
-            *   Remove the `head` node from the doubly linked list.
-        *   Create a new `Node` with the given `key` and `value`.
-        *   Add the new `Node` to the `HashMap`.
-        *   Add the new `Node` to the tail of the doubly linked list.
-
-5.  **Helper Methods**:
-    *   `addAtTail(Node n)`: Appends a node `n` to the end of the doubly linked list. Handles the case where the list is empty.
-    *   `removeNode(Node n)`: Removes a node `n` from its current position in the doubly linked list. Updates `head` and `tail` pointers if necessary.
+        *   If yes:
+            *   Retrieve the existing `Node`.
+            *   Update its `value`.
+            *   **Move to front**: Remove this `Node` from its current position in the Doubly Linked List.
+            *   **Add to front**: Add this `Node` to the end (tail) of the Doubly Linked List.
+        *   If no:
+            *   Check if the `HashMap` size equals `capacity`.
+                *   If yes (cache is full):
+                    *   Get the `key` of the `head` node (least recently used).
+                    *   Remove the `head` node from the `HashMap`.
+                    *   **Remove from front**: Remove the `head` node from the Doubly Linked List.
+            *   Create a new `Node` with the given `key` and `value`.
+            *   **Add to front**: Add this new `Node` to the end (tail) of the Doubly Linked List.
+            *   Add the new `Node` to the `HashMap` with its `key`.
+4.  **Helper function `remove(Node x)`**:
+    *   Handles removing a `Node` from the Doubly Linked List by updating `prev` and `next` pointers of its neighbors.
+    *   Special handling for removing `head` or `tail`.
+5.  **Helper function `putLast(Node x)`**:
+    *   Handles adding a `Node` to the end (tail) of the Doubly Linked List.
+    *   Updates `head` and `tail` pointers accordingly.
 
 ## Concept to Remember
-*   **Hash Map**: For O(1) average time complexity for key-value lookups, insertions, and deletions.
-*   **Doubly Linked List**: To maintain the order of elements and allow O(1) insertion/deletion at arbitrary positions (once the node is found).
-*   **Cache Eviction Policy**: Understanding LRU as a common strategy to manage limited cache space.
-*   **Sentinel Nodes (Optional but good practice)**: Using dummy `head` and `tail` nodes can simplify edge case handling (e.g., empty list, removing head/tail). The provided solution doesn't use sentinel nodes, which makes `addAtTail` and `removeNode` slightly more complex.
+*   **HashMap**: For efficient O(1) key-value lookups.
+*   **Doubly Linked List**: For O(1) insertion and deletion at arbitrary positions (especially head/tail) to maintain usage order.
+*   **Cache Eviction Policy**: Understanding LRU as a common strategy.
+*   **Sentinel Nodes (Optional but good practice)**: Using dummy `head` and `tail` nodes can simplify edge cases in linked list operations. (The provided solution doesn't use sentinels, but it's a valuable concept).
 
 ## Common Mistakes
-*   **Forgetting to update the doubly linked list**: When a key is accessed or updated, it must be moved to the tail of the list to signify it's the most recently used.
-*   **Incorrectly handling `head` and `tail` pointers**: Especially when removing nodes or when the list is empty or has only one element.
-*   **Not removing the LRU item from the `HashMap`**: When evicting an item due to capacity, it must be removed from both the linked list and the hash map.
-*   **Inefficient linked list operations**: If linked list operations are not O(1) (e.g., searching for a node to remove), the overall performance degrades.
-*   **Not handling edge cases**: Empty cache, cache with one element, accessing/putting the head/tail element.
+*   **Incorrectly updating `head` and `tail` pointers**: Especially when removing or adding nodes at the boundaries of the list.
+*   **Forgetting to remove the least recently used item from the `HashMap`**: When the cache is full and a new item is added.
+*   **Not handling edge cases**: Such as an empty cache, a cache with only one element, or operations on the `head` or `tail` nodes.
+*   **Inefficient linked list operations**: If `remove` or `putLast` are not O(1), the overall performance degrades.
+*   **Memory leaks**: Not properly dereferencing nodes or forgetting to remove from the HashMap when evicting.
 
 ## Complexity Analysis
 *   **Time**:
-    *   `get(key)`: O(1) - Hash map lookup is O(1) on average. Moving a node in a doubly linked list (remove + add) is O(1).
-    *   `put(key, value)`: O(1) - Hash map operations are O(1) on average. Linked list operations are O(1).
-*   **Space**: O(N) - Where N is the capacity of the cache. This is due to storing up to N key-value pairs in the `HashMap` and the corresponding nodes in the doubly linked list.
+    *   `get(key)`: O(1) - HashMap lookup is O(1), and Doubly Linked List operations (remove, add to end) are O(1).
+    *   `put(key, value)`: O(1) - HashMap operations are O(1), and Doubly Linked List operations are O(1).
+*   **Space**: O(capacity) - The HashMap stores up to `capacity` key-node pairs, and the Doubly Linked List stores up to `capacity` nodes.
 
 ## Commented Code
 ```java
 class LRUCache {
-    // Inner class to represent a node in the doubly linked list
-    class Node {
-        int key; // The key of the cache entry
-        int value; // The value of the cache entry
+    // Inner class to represent a node in the Doubly Linked List
+    class Node{
         Node next; // Pointer to the next node in the list
         Node prev; // Pointer to the previous node in the list
-        
-        // Constructor for a Node
-        public Node(int x, int y) {
-            this.key = x; // Initialize key
-            this.value = y; // Initialize value
-            this.next = null; // Initially, no next node
-            this.prev = null; // Initially, no previous node
+        int key;   // The key of the cache entry
+        int value; // The value of the cache entry
+
+        // Constructor for the Node
+        Node(int key, int value){
+            this.value = value; // Initialize value
+            this.key = key;     // Initialize key
+            this.next = null;   // Initialize next pointer to null
+            this.prev = null;   // Initialize prev pointer to null
         }
     }
 
-    HashMap <Integer,Node> map ; // HashMap to store key -> Node mappings for O(1) access
-    int capacity ; // The maximum capacity of the cache
-    Node head; // Pointer to the head of the doubly linked list (Least Recently Used)
-    Node tail; // Pointer to the tail of the doubly linked list (Most Recently Used)
+    // HashMap to store key -> Node mappings for O(1) access
+    HashMap<Integer,Node> hm;
+    // The maximum capacity of the cache
+    int capacity;
+    // Pointer to the head of the Doubly Linked List (least recently used)
+    Node head;
+    // Pointer to the tail of the Doubly Linked List (most recently used)
+    Node tail;
 
     // Constructor for LRUCache
     public LRUCache(int capacity) {
-        this.capacity = capacity; // Set the cache capacity
-        this.map = new HashMap<>(); // Initialize the hash map
-        this.head = null; // Initially, the list is empty
-        this.tail = null; // Initially, the list is empty        
+        this.capacity = capacity; // Set the capacity
+        hm = new HashMap<>();     // Initialize the HashMap
+        // head and tail are implicitly null initially
     }
-    
-    // Method to retrieve a value from the cache
+
+    // Method to get the value associated with a key
     public int get(int key) {
-        // Check if the key exists in the map
-        if(map.containsKey(key)){
-            Node needed = map.get(key); // Get the node associated with the key
-            // If the node is already the tail (most recently used), no need to move it
-            if(needed.next == null) return needed.value; 
-            // Remove the node from its current position in the list
-            removeNode(needed);
-            // Add the node to the tail of the list (making it most recently used)
-            addAtTail(needed);
-            // Return the value of the node
-            return needed.value;
-        }
-        // If the key is not found, return -1
-        return -1;
+        // If the key is not in the HashMap, it's not in the cache
+        if(!hm.containsKey(key)) return -1;
+
+        // Get the node from the HashMap
+        Node x = hm.get(key);
+        // Remove the node from its current position in the list
+        remove(x);
+        // Move the accessed node to the end of the list (most recently used)
+        putLast(x);
+        // Return the value of the accessed node
+        return x.value;
     }
 
-    // Method to add or update a key-value pair in the cache
+    // Method to put a key-value pair into the cache
     public void put(int key, int value) {
-        // Check if the key already exists in the map
-        if(map.containsKey(key)){
-            Node toUpdate = map.get(key); // Get the existing node
-            toUpdate.value = value; // Update its value
+        // If the key already exists in the cache
+        if(hm.containsKey(key)){
+            // Get the existing node
+            Node old = hm.get(key);
+            // Update its value
+            old.value = value;
             // Remove the node from its current position
-            removeNode(toUpdate);
-            // Add the node to the tail of the list (making it most recently used)
-            addAtTail(toUpdate);
-        }
-        else { // If the key does not exist
-           // Check if the cache is at its capacity
-           if(capacity <= map.size()){
-            // If full, remove the least recently used item (head)
-            map.remove(head.key); // Remove from hash map
-            removeNode(head); // Remove from linked list
-           }
-           // Create a new node for the new key-value pair
-           Node toAdd = new Node(key,value);
-           // Add the new node to the hash map
-           map.put(key,toAdd);
-           // Add the new node to the tail of the list (making it most recently used)
-           addAtTail(toAdd);
-        }
-    }
-    
-    // Helper method to add a node to the tail of the doubly linked list
-    public void addAtTail(Node n){
-        n.next=null; // Ensure the new node's next pointer is null
-        // If the list is empty (head is null)
-        if (head == null) {
-            head = n; // The new node becomes both head and tail
-            tail = n;
-        } else{ // If the list is not empty
-            n.prev = tail; // Set the new node's previous pointer to the current tail
-            tail.next = n; // Link the current tail's next pointer to the new node
-            tail = tail.next; // Move the tail pointer to the new node
+            remove(old);
+            // Move the updated node to the end of the list (most recently used)
+            putLast(old);
+        } else { // If the key does not exist in the cache
+            // Check if the cache is full
+            if(hm.size()==capacity){
+                // If full, remove the least recently used item (head)
+                // Remove from HashMap
+                hm.remove(head.key);
+                // Remove from Doubly Linked List
+                remove(head);
+            }
+            // Create a new node for the new key-value pair
+            Node temp = new Node(key,value);
+            // Add the new node to the end of the list (most recently used)
+            putLast(temp);
+            // Add the new node to the HashMap
+            hm.put(key,temp);
         }
     }
 
-    // Helper method to remove a node from the doubly linked list
-    public void removeNode(Node needed) { 
-        // If the node to be removed is the head
-        if(needed.prev == null) head = needed.next; // Update head to the next node
-        else needed.prev.next = needed.next; // Otherwise, link previous node's next to the node after 'needed'
-        
-        // If the node to be removed is the tail
-        if(needed.next == null) tail = needed.prev; // Update tail to the previous node
-        else needed.next.prev = needed.prev; // Otherwise, link next node's prev to the node before 'needed'
+    // Helper method to remove a node from the Doubly Linked List
+    public void remove(Node x){
+        // If the node to remove is the head
+        if(x.prev==null) head = x.next; // Update head to the next node
+        else x.prev.next = x.next;      // Link previous node's next to the node after x
+
+        // If the node to remove is the tail
+        if(x.next==null) tail = x.prev; // Update tail to the previous node
+        else x.next.prev = x.prev;      // Link next node's prev to the node before x
     }
-    
+
+    // Helper method to add a node to the end (tail) of the Doubly Linked List
+    public void putLast(Node x){
+        x.next = null; // Ensure the new tail's next is null
+
+        // If the list is empty
+        if(tail==null){
+            head = tail = x; // The new node is both head and tail
+            x.prev = null;   // Ensure new head's prev is null
+        } else { // If the list is not empty
+            tail.next = x;   // Link current tail's next to the new node
+            x.prev = tail;   // Link new node's prev to the current tail
+            tail = tail.next; // Update tail to be the new node
+        }
+    }
 }
-
 /**
  * Your LRUCache object will be instantiated and called as such:
  * LRUCache obj = new LRUCache(capacity);
@@ -279,22 +263,22 @@ class LRUCache {
 ```
 
 ## Interview Tips
-1.  **Explain the Trade-offs**: Clearly articulate why a hash map and a doubly linked list are used together. Mention the O(1) access of the hash map and the O(1) insertion/deletion of the linked list.
-2.  **Walk Through Examples**: Use a small capacity (e.g., 2) and walk through a sequence of `put` and `get` operations. Show how the linked list and hash map change. This demonstrates your understanding of the LRU logic.
-3.  **Handle Edge Cases**: Be prepared to discuss what happens when the cache is empty, has only one element, or when you `get` or `put` the head or tail element.
-4.  **Discuss Sentinel Nodes (Optional but good)**: Mention that using dummy `head` and `tail` nodes can simplify the `addAtTail` and `removeNode` logic by eliminating checks for `null` head/tail. The provided solution doesn't use them, so be ready to explain its logic thoroughly.
-5.  **Clarify `removeNode` and `addAtTail`**: These are the core linked list manipulation functions. Ensure you can explain them clearly and correctly, especially how `head` and `tail` pointers are updated.
+1.  **Explain the Data Structures**: Clearly articulate *why* you're using a HashMap and a Doubly Linked List together. Emphasize the strengths of each and how they complement each other.
+2.  **Walk Through Operations**: Verbally (or on a whiteboard) trace `get` and `put` operations with a small example, showing how the HashMap and the Doubly Linked List change. Pay special attention to edge cases like adding to a full cache or accessing the head/tail.
+3.  **Handle Edge Cases**: Be prepared to discuss what happens when the cache is empty, has only one element, or when operations involve the `head` or `tail` nodes. The `remove` and `putLast` helper functions are crucial here.
+4.  **Discuss Sentinel Nodes (Optional but good)**: If you have time or are asked for optimizations, mention how using dummy `head` and `tail` nodes can simplify the `remove` and `putLast` logic by eliminating null checks for `head` and `tail` themselves.
 
 ## Revision Checklist
 - [ ] Understand the LRU eviction policy.
-- [ ] Implement a `Node` class for a doubly linked list.
-- [ ] Use a `HashMap` for O(1) key lookups.
-- [ ] Implement `addAtTail` to move/add nodes to the end of the list.
-- [ ] Implement `removeNode` to detach nodes from the list.
-- [ ] Correctly update `head` and `tail` pointers in `removeNode` and `addAtTail`.
-- [ ] Handle cache capacity in `put` by evicting the LRU item.
-- [ ] Ensure `get` moves accessed items to the tail.
-- [ ] Test with edge cases: empty cache, full cache, single element cache.
+- [ ] Implement a Doubly Linked List with O(1) insertion/deletion.
+- [ ] Implement a HashMap for O(1) key lookups.
+- [ ] Combine HashMap and Doubly Linked List correctly.
+- [ ] Handle `get` operation: lookup, move to end.
+- [ ] Handle `put` operation: update existing, add new.
+- [ ] Handle cache eviction when capacity is reached.
+- [ ] Implement helper methods `remove` and `putLast` robustly.
+- [ ] Consider edge cases: empty cache, single element, head/tail operations.
+- [ ] Analyze time and space complexity.
 
 ## Similar Problems
 *   LFU Cache (LeetCode 460)
@@ -302,7 +286,4 @@ class LRUCache {
 *   Design Circular Deque (LeetCode 641)
 
 ## Tags
-`Linked List` `Hash Map` `Design` `Doubly-Linked List`
-
-## My Notes
-Using Doubly Linked List. Amazing
+`Linked List` `Hash Map` `Design`
