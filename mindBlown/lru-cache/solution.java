@@ -1,83 +1,69 @@
 class LRUCache {
-    class Node {
-        int key;
-        int value;
+    class Node{
         Node next;
         Node prev;
-        
-        // Constructor
-        public Node(int x, int y) {
-            this.key = x;
-            this.value = y;
-            this.next = null; // next pointer initially null
-            this.prev = null; // previous pointer initially null
+        int key;
+        int value;
+        Node(int key, int value){
+            this.value = value;
+            this.key = key;
+            this.next = null;
+            this.prev = null;
         }
     }
-
-    HashMap <Integer,Node> map ;
-    int capacity ; 
+    HashMap<Integer,Node> hm;
+    int capacity;
     Node head;
     Node tail;
-
     public LRUCache(int capacity) {
-        this.capacity = capacity;
-        this.map = new HashMap<>();
-        this.head = null;
-        this.tail = null;        
+        this.capacity = capacity; 
+        hm= new HashMap<>();
+        
     }
     
     public int get(int key) {
-        if(map.containsKey(key)){
-            Node needed = map.get(key);
-            if(needed.next == null) return needed.value;
-            removeNode(needed);
-            addAtTail(needed);
-            return needed.value;
-        }
-        return -1;
-    }
-
-    public void put(int key, int value) {
-        if(map.containsKey(key)){
-            Node toUpdate = map.get(key);
-            toUpdate.value = value;
-            removeNode(toUpdate);
-            addAtTail(toUpdate);
-        }
-        else {
-           if(capacity<=map.size()){
-            map.remove(head.key);
-            removeNode(head);
-           }
-           Node toAdd = new Node(key,value);
-           map.put(key,toAdd);
-           addAtTail(toAdd);
-        }
-       
+        if(!hm.containsKey(key)) return -1;
+        Node x = hm.get(key);
+        remove(x);
+        putLast(x);
+        return x.value;
     }
     
-    public void addAtTail(Node n){
-        n.next=null;
-        // We get a lawaris node, we mark its prev as current tail, attach tail's next to the lawaris node
-        // and now our tail moves ahead and that lawaris node is our tail
-        if (head == null) {
-            head = n;
-            tail = n;
-        } else{
-            n.prev = tail;
-            tail.next = n;
+    public void put(int key, int value) {
+        if(hm.containsKey(key)){
+            Node old = hm.get(key);
+            old.value = value;
+            remove(old);
+            putLast(old);
+        } else {
+            if(hm.size()==capacity){
+                hm.remove(head.key);   
+                remove(head);
+            }
+            Node temp =new Node(key,value);
+            putLast(temp);
+            hm.put(key,temp);
+        }
+    }
+    public void remove(Node x){
+        if(x.prev==null) head = x.next;
+        else x.prev.next = x.next;
+
+        if(x.next==null) tail = x.prev;
+        else x.next.prev = x.prev;
+    }
+    public void putLast(Node x){
+        x.next = null;
+        if(tail==null){
+            head = tail = x;
+            x.prev = null;
+        }else{
+            tail.next = x;
+            x.prev = tail;
             tail = tail.next;
         }
     }
-    public void removeNode(Node needed) { 
-        if(needed.prev == null) head = needed.next;
-        else needed.prev.next = needed.next;
-        if(needed.next == null) tail = needed.prev;
-        else needed.next.prev = needed.prev;
-    }
-    
 }
-
 /**
  * Your LRUCache object will be instantiated and called as such:
  * LRUCache obj = new LRUCache(capacity);
