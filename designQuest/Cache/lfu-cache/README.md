@@ -3,7 +3,7 @@
 **Difficulty:** Hard  
 **Language:** Java  
 **Tags:** `Hash Table` `Linked List` `Design` `Doubly-Linked List`  
-**Time:**   
+**Time:** See complexity section  
 **Space:** O(N)
 
 ---
@@ -154,197 +154,237 @@ class LFUCache {
 
 ---
 ## Quick Revision
-This problem asks us to implement a Least Frequently Used (LFU) cache. We need to evict the least frequently used item when the cache is full, and if there's a tie in frequency, evict the least recently used among them.
-
-The solution uses a combination of a HashMap for key-value lookups and frequency tracking, and a Doubly Linked List (DLL) for each frequency to maintain the Least Recently Used (LRU) order within that frequency.
+This problem asks to implement a Least Frequently Used (LFU) cache.
+The solution involves using hash maps to store key-value pairs and frequency-linked lists to manage eviction.
 
 ## Intuition
-The core challenge is efficiently tracking both frequency and recency. A simple HashMap won't suffice because we need to know which item is least frequent and, among those, which was used least recently.
+The core idea is to track not only the key-value pairs but also their access frequencies. When the cache is full and a new item needs to be added, we must evict the item that has been accessed the least frequently. If there's a tie in frequency, we evict the least recently used (LRU) among those with the minimum frequency.
 
-The "aha moment" comes from realizing that we can group items by their frequency. For each frequency, we can maintain a separate Doubly Linked List (DLL). This DLL will store nodes in the order they were accessed (most recently used at the tail, least recently used at the head).
+To efficiently manage this, we can use two hash maps:
+1. `ref`: Maps a key to its corresponding `Node`. This allows O(1) access to any node.
+2. `freqs`: Maps a frequency count to a Doubly Linked List (DLL) of nodes that have that frequency. This allows us to quickly find all nodes with a specific frequency.
 
-When an item's frequency increases, we move it from its current frequency's DLL to the DLL of the next higher frequency. If a frequency's DLL becomes empty, and that frequency was the minimum frequency, we increment our `minFreq` tracker. This allows us to quickly identify the item to evict (the head of the `minFreq` DLL).
+We also need to maintain `minFreq`, the minimum frequency currently present in the cache. This helps us identify the list from which to evict when the cache is full.
+
+The `Node` class will store the key, value, frequency count, and pointers for the DLL. The `DLL` class will manage a list of nodes with the same frequency, using `head` and `tail` pointers.
+
+When an item is accessed (`get` or `put` for an existing key), its frequency increases. We need to move it from its current frequency's DLL to the DLL of the next higher frequency. If its old frequency list becomes empty and it was the `minFreq`, we increment `minFreq`.
+
+When adding a new item (`put` for a new key) and the cache is full, we evict the head of the `minFreq` DLL.
 
 ## Algorithm
-1.  **Data Structures:**
-    *   `capacity`: The maximum number of items the cache can hold.
-    *   `minFreq`: An integer tracking the current minimum frequency of any item in the cache.
-    *   `ref`: A `HashMap<Integer, Node>` to store a mapping from the key to its corresponding `Node`. This allows O(1) access to any node.
-    *   `freqs`: A `HashMap<Integer, DLL>` to store a mapping from frequency to a `DLL`. Each `DLL` contains nodes with that specific frequency, ordered by recency.
-    *   `Node` class: Represents a cache item with `key`, `value`, `count` (frequency), `next`, and `prev` pointers for the DLL.
-    *   `DLL` class: Represents a Doubly Linked List for a specific frequency, with `head` and `tail` pointers.
+1.  **Data Structures**:
+    *   `Node` class: `key`, `value`, `count` (frequency), `prev`, `next` (for DLL).
+    *   `DLL` class: `head`, `tail` (pointers to `Node`s).
+    *   `capacity`: Maximum size of the cache.
+    *   `minFreq`: Current minimum frequency in the cache.
+    *   `ref`: `HashMap<Integer, Node>` mapping keys to their nodes.
+    *   `freqs`: `HashMap<Integer, DLL>` mapping frequency counts to their respective DLLs.
 
-2.  **Constructor `LFUCache(int capacity)`:**
+2.  **Constructor `LFUCache(int capacity)`**:
     *   Initialize `capacity`.
     *   Initialize `minFreq` to 0.
-    *   Initialize `ref` and `freqs` HashMaps.
+    *   Initialize `ref` and `freqs` hash maps.
 
-3.  **`get(int key)`:**
-    *   Check if `key` exists in `ref`. If not, return -1.
-    *   Retrieve the `Node` from `ref`.
+3.  **`get(int key)`**:
+    *   If `key` is not in `ref`, return -1.
+    *   Get the `Node` from `ref`.
     *   Call `increment(node)` to update its frequency and move it to the appropriate DLL.
     *   Return the `node.value`.
 
-4.  **`put(int key, int value)`:**
-    *   **If `key` exists in `ref`:**
+4.  **`put(int key, int value)`**:
+    *   If `capacity` is 0, do nothing.
+    *   If `key` is already in `ref`:
         *   Get the existing `Node`.
         *   Update its `value`.
-        *   Call `increment(node)` to update its frequency.
-    *   **If `key` does not exist:**
-        *   **Eviction:** If `ref.size() == capacity`:
-            *   Get the `DLL` corresponding to `minFreq` from `freqs`.
-            *   Get the `Node` at the head of this `DLL` (this is the LFU and LRU item).
-            *   Remove this `Node` from `ref`.
-            *   Remove this `Node` from its `DLL` using `removeNodeFrom`.
-        *   **Add New Node:**
-            *   Set `minFreq` to 1 (newly added items always start with frequency 1).
-            *   Create a new `Node` with the given `key` and `value`.
-            *   Add the new `Node` to `ref`.
-            *   If `freqs` does not contain a `DLL` for frequency 1, create a new `DLL` and put it in `freqs`.
-            *   Add the new `Node` to the end of the `DLL` for frequency 1 using `putLastIn`.
+        *   Call `increment(node)`.
+    *   If `key` is not in `ref`:
+        *   If `ref.size() == capacity` (cache is full):
+            *   Get the `DLL` for `minFreq` from `freqs`.
+            *   Get the `Node` at the head of this `minFreq` DLL (this is the LFU/LRU node).
+            *   Remove this node from `ref`.
+            *   Remove this node from its `minFreq` DLL using `removeNodeFrom`.
+        *   Set `minFreq` to 1 (newly added items always start with frequency 1).
+        *   Create a new `Node` with the given `key` and `value`.
+        *   Add the new `Node` to `ref`.
+        *   If `freqs` does not contain key 1, create a new `DLL` for frequency 1.
+        *   Add the new `Node` to the end of the DLL for frequency 1 using `putLastIn`.
 
-5.  **`increment(Node x)`:**
+5.  **`increment(Node x)`**:
     *   Get the `oldFreq` of the node `x`.
-    *   Get the `DLL` (`oldList`) corresponding to `oldFreq` from `freqs`.
-    *   Remove `x` from `oldList` using `removeNodeFrom`.
-    *   **Update `minFreq`:** If `oldFreq` was `minFreq` and `oldList` is now empty (its `head` is null), increment `minFreq`.
+    *   Get the `DLL` corresponding to `oldFreq` from `freqs`.
+    *   Remove `x` from its `oldList` using `removeNodeFrom`.
+    *   If `oldFreq` was `minFreq` AND `oldList` is now empty (its `head` is null), increment `minFreq`.
     *   Increment `x.count`.
-    *   Ensure a `DLL` exists for the new frequency (`x.count`) in `freqs`. If not, create one.
-    *   Add `x` to the end of the `DLL` for its new frequency using `putLastIn`.
+    *   Get the `newFreq` (`x.count`).
+    *   Use `freqs.putIfAbsent(newFreq, new DLL())` to ensure a DLL exists for the `newFreq`.
+    *   Add `x` to the end of the `DLL` for `newFreq` using `putLastIn`.
 
-6.  **`removeNodeFrom(DLL list, Node x)`:**
+6.  **`removeNodeFrom(DLL list, Node x)`**:
     *   Handles removing a node `x` from a given `DLL` `list`.
-    *   Updates `prev.next` and `next.prev` pointers to bypass `x`.
-    *   Handles cases where `x` is the head or tail of the list.
+    *   Updates `prev.next` and `next.prev` pointers.
+    *   Updates `list.head` and `list.tail` if `x` was the head or tail.
 
-7.  **`putLastIn(DLL list, Node x)`:**
-    *   Handles adding a node `x` to the tail of a given `DLL` `list`.
+7.  **`putLastIn(DLL list, Node x)`**:
+    *   Handles adding a node `x` to the end of a given `DLL` `list`.
     *   If the list is empty, `head` and `tail` both point to `x`.
     *   Otherwise, appends `x` after the current `tail` and updates `tail`.
 
 ## Concept to Remember
-*   **Hash Maps:** For O(1) average time complexity for key lookups, insertions, and deletions.
-*   **Doubly Linked Lists:** To maintain order (recency) within groups (frequencies) and allow O(1) insertion/deletion of nodes.
-*   **Frequency Grouping:** Organizing data by frequency allows efficient identification of the least frequent items.
-*   **Minimum Frequency Tracking:** Maintaining `minFreq` helps quickly locate the group from which to evict.
+*   **Hash Maps**: For O(1) average time complexity lookups, insertions, and deletions of key-value pairs. Used for `ref` (key to Node) and `freqs` (frequency to DLL).
+*   **Doubly Linked Lists (DLLs)**: For O(1) insertion and deletion of nodes. Used within `freqs` to maintain order of nodes with the same frequency (LRU within frequency).
+*   **Frequency Tracking**: Maintaining counts of how many times each item has been accessed.
+*   **Eviction Policy (LFU + LRU tie-breaker)**: The core logic of removing the least frequently used item, and if there's a tie, removing the least recently used among them.
 
 ## Common Mistakes
-*   **Incorrectly updating `minFreq`:** Forgetting to increment `minFreq` when a frequency group becomes empty and that frequency was the minimum.
-*   **Handling edge cases in DLL operations:** Not properly managing `head` and `tail` pointers when removing or adding nodes, especially for empty lists or lists with a single element.
-*   **Not removing nodes from `ref` during eviction:** Forgetting to remove the evicted node from the `ref` HashMap, leading to stale entries.
-*   **Inefficient `increment` operation:** If `increment` doesn't correctly move the node between DLLs and update frequencies, the cache logic breaks.
-*   **Confusing `key` and `value`:** Misplacing or misusing the `key` and `value` fields within the `Node` or HashMaps.
+*   **Incorrectly updating `minFreq`**: Forgetting to increment `minFreq` when the current `minFreq` list becomes empty after removing a node.
+*   **DLL manipulation errors**: Bugs in `removeNodeFrom` or `putLastIn` leading to broken links or incorrect head/tail pointers.
+*   **Handling edge cases**: Not properly managing empty lists, capacity 0, or the first insertion into a frequency list.
+*   **Forgetting to update `ref`**: When evicting a node, failing to remove it from the `ref` map.
+*   **Complexity of `increment`**: Ensuring that moving a node between DLLs and updating frequency maps is done efficiently.
 
 ## Complexity Analysis
-*   **Time:**
-    *   `get(key)`: O(1) on average. Accessing `ref` is O(1). `increment` involves HashMap operations and DLL operations, all of which are O(1).
-    *   `put(key, value)`: O(1) on average. Similar to `get`, operations on `ref`, `freqs`, and DLLs are O(1). Eviction also involves O(1) operations.
-*   **Space:** O(N), where N is the capacity of the cache. This is because we store each of the N items in the `ref` HashMap, and potentially in the `freqs` HashMap and their associated DLLs.
+*   **Time**:
+    *   `get(key)`: O(1) - Hash map lookups and DLL operations are O(1).
+    *   `put(key, value)`: O(1) - Hash map operations and DLL operations are O(1).
+*   **Space**: O(N) - Where N is the number of items in the cache. This is due to storing each key-value pair in `ref` and potentially distributing them across various DLLs in `freqs`.
 
 ## Commented Code
 ```java
 class LFUCache {
-    // Inner class to represent a node in the cache and in the Doubly Linked List
+    // Inner class to represent a node in the cache.
+    // Each node stores its key, value, frequency count, and pointers for a doubly linked list.
     class Node{
-        int key,value,count; // key, value, and frequency (count) of the node
-        Node next,prev; // pointers for the Doubly Linked List
-        Node(int key, int value){ // constructor for Node
+        int key,value,count; // key, value, and frequency count of the node
+        Node next,prev; // pointers for the doubly linked list
+        // Constructor for Node
+        Node(int key, int value){
             this.key = key; // initialize key
             this.value=value; // initialize value
-            this.count = 1; // initialize frequency to 1 (newly added nodes)
+            this.count = 1; // initialize frequency count to 1 (newly added nodes start with frequency 1)
         }
     }
 
-    // Inner class to represent a Doubly Linked List for a specific frequency
+    // Inner class to represent a Doubly Linked List (DLL).
+    // This DLL will store nodes that have the same frequency.
     class DLL{
         Node head, tail; // head and tail pointers of the DLL
-        DLL(){ // constructor for DLL
-            this.head = null; // initialize head to null
-            this.tail = null; // initialize tail to null
+        // Constructor for DLL
+        DLL(){
+            this.head = null; // initialize head to null (empty list)
+            this.tail = null; // initialize tail to null (empty list)
         }
     }
 
     int capacity; // maximum capacity of the cache
-    int minFreq; // tracks the minimum frequency currently present in the cache
-    HashMap<Integer, Node> ref; // HashMap to map keys to their corresponding Nodes (for O(1) access)
-    HashMap<Integer, DLL> freqs; // HashMap to map frequencies to their corresponding DLLs
+    int minFreq; // stores the minimum frequency currently present in the cache
+    HashMap<Integer, Node> ref; // map to store key -> Node, for O(1) access to any node
+    HashMap<Integer, DLL> freqs; // map to store frequency -> DLL, for O(1) access to nodes of a specific frequency
 
     // Constructor for LFUCache
     public LFUCache(int capacity) {
         this.capacity = capacity; // set the cache capacity
-        this.minFreq = 0; // initialize minFreq to 0
+        this.minFreq = 0; // initialize minFreq to 0 (no elements yet)
         this.ref = new HashMap<>(); // initialize the reference map
         this.freqs = new HashMap<>(); // initialize the frequency map
     }
 
-    // Get the value of a key from the cache
+    // Get the value of a key from the cache.
     public int get(int key) {
-        if(!ref.containsKey(key)) return -1; // if key is not in the cache, return -1
+        // if the key is not present in the cache, return -1
+        if(!ref.containsKey(key)) return -1;
 
-        Node old = ref.get(key); // get the node associated with the key
-        increment(old); // increment the frequency of the node
-        return old.value; // return the value of the node
+        // get the node associated with the key
+        Node old = ref.get(key);
+        // increment the frequency of the node and move it to the appropriate DLL
+        increment(old);
+        // return the value of the node
+        return old.value;
     }
 
-    // Put a key-value pair into the cache
+    // Put a key-value pair into the cache.
     public void put(int key, int value) {
-        if(ref.containsKey(key)){ // if the key already exists in the cache
-            Node old = ref.get(key); // get the existing node
-            old.value = value; // update its value
-            increment(old); // increment its frequency
+        // if capacity is 0, we cannot add anything, so return
+        if(capacity == 0) return;
+
+        // if the key already exists in the cache
+        if(ref.containsKey(key)){
+            // get the existing node
+            Node old = ref.get(key);
+            // update its value
+            old.value = value;
+            // increment its frequency and move it to the appropriate DLL
+            increment(old);
         } else { // if the key does not exist
-            if(ref.size()==capacity){ // if the cache is full
-                DLL minList = freqs.get(minFreq); // get the DLL for the minimum frequency
-                Node toRemove = minList.head; // the node to remove is the head of this DLL (LFU and LRU)
-                
-                ref.remove(toRemove.key); // remove the node from the reference map
-                removeNodeFrom(minList,toRemove); // remove the node from its DLL
+            // if the cache is full
+            if(ref.size()==capacity){
+                // get the DLL corresponding to the minimum frequency
+                DLL minList = freqs.get(minFreq);
+                // get the node at the head of this list (this is the LFU/LRU node to be removed)
+                Node toRemove = minList.head;
+
+                // remove the node from the reference map
+                ref.remove(toRemove.key);
+                // remove the node from its current DLL
+                removeNodeFrom(minList,toRemove);
             }
-            minFreq = 1; // reset minFreq to 1 for the new node
-            
-            Node temp = new Node(key,value); // create a new node
-            ref.put(key,temp); // add the new node to the reference map
-            
-            // ensure a DLL exists for frequency 1, create if not
-            freqs.putIfAbsent(1, new DLL()); 
+            // when a new item is added, its frequency is 1, so minFreq becomes 1
+            minFreq = 1;
+
+            // create a new node with the given key and value
+            Node temp = new Node(key,value);
+            // add the new node to the reference map
+            ref.put(key,temp);
+            // if there's no DLL for frequency 1 yet, create one
+            if(!freqs.containsKey(1)) freqs.put(1,new DLL()) ;
+
             // add the new node to the end of the DLL for frequency 1
-            putLastIn(freqs.get(1),temp); 
+            putLastIn(freqs.get(1),temp);
         }
     }
 
-    // Helper method to remove a node from a Doubly Linked List
+    // Helper method to remove a node 'x' from a given DLL 'list'.
     public void removeNodeFrom(DLL list,Node x){
-        if(x.prev!=null)x.prev.next = x.next; // if node has a previous, link previous to next
-        else list.head = x.next; // if node is head, update list's head
-        
-        if(x.next!=null)x.next.prev = x.prev; // if node has a next, link next to previous
-        else list.tail = x.prev; // if node is tail, update list's tail
+        // if the node has a previous node, update its next pointer
+        if(x.prev!=null)x.prev.next = x.next;
+        // if the node was the head, update the list's head
+        else list.head = x.next;
+
+        // if the node has a next node, update its previous pointer
+        if(x.next!=null)x.next.prev = x.prev;
+        // if the node was the tail, update the list's tail
+        else list.tail = x.prev;
     }
 
-    // Helper method to add a node to the end (tail) of a Doubly Linked List
+    // Helper method to add a node 'x' to the end of a given DLL 'list'.
     public void putLastIn(DLL list,Node x){
-        x.next = null; // new node's next is always null as it's the last
-        if(list.tail == null){ // if the list is empty
+        x.next = null; // the new node will be the last, so its next is null
+        // if the list is empty
+        if(list.tail == null){
             list.head = list.tail = x; // head and tail both point to the new node
-            x.prev = null; // new node's prev is null
+            x.prev = null; // the new node has no previous node
         } else{ // if the list is not empty
-            list.tail.next = x; // current tail's next points to the new node
-            x.prev = list.tail; // new node's prev points to the current tail
-            list.tail = list.tail.next; // update list's tail to the new node
+            list.tail.next = x; // the current tail's next points to the new node
+            x.prev = list.tail; // the new node's previous points to the current tail
+            list.tail = list.tail.next; // update the list's tail to be the new node
         }
     }
 
-    // Helper method to increment the frequency of a node and move it to the correct DLL
+    // Helper method to increment the frequency of a node 'x'.
     public void increment(Node x){
-        int oldFreq = x.count; // get the current frequency of the node
+        int oldFreq = x.count; // store the current frequency
         DLL oldList = freqs.get(oldFreq); // get the DLL for the old frequency
-        removeNodeFrom(oldList,x); // remove the node from its old DLL
+        // remove the node from its old DLL
+        removeNodeFrom(oldList,x);
 
-        // if the old frequency was the minimum and its list is now empty, increment minFreq
-        if(oldFreq==minFreq && oldList.head == null) minFreq++; 
-        
-        freqs.putIfAbsent(++x.count, new DLL()); // increment node's frequency and ensure a DLL exists for it
-        putLastIn(freqs.get(x.count),x); // add the node to the end of the DLL for its new frequency
+        // if the old frequency was the minimum frequency AND its list is now empty,
+        // it means the minimum frequency in the cache has increased.
+        if(oldFreq==minFreq && oldList.head == null) minFreq++;
+
+        // increment the node's frequency count
+        freqs.putIfAbsent(++x.count, new DLL()); // ensure a DLL exists for the new frequency, create if not
+        // add the node to the end of the DLL for its new frequency
+        putLastIn(freqs.get(x.count),x);
     }
 }
 
@@ -357,30 +397,28 @@ class LFUCache {
 ```
 
 ## Interview Tips
-1.  **Explain the two-tiered approach:** Clearly articulate why a single HashMap isn't enough and how the combination of `ref` (for O(1) key access) and `freqs` (for frequency grouping and LRU within frequency) is crucial.
-2.  **Walk through `increment` and `put` with an example:** Use a small capacity (e.g., 2) and a sequence of `put` and `get` operations to demonstrate how nodes move between DLLs and how `minFreq` is updated. This is where most of the logic resides.
-3.  **Discuss edge cases for DLL operations:** Be prepared to explain how `removeNodeFrom` and `putLastIn` handle empty lists, single-node lists, and removing/adding at the head/tail.
-4.  **Clarify the role of `minFreq`:** Emphasize that `minFreq` is not just a counter but a pointer to the *group* from which eviction should occur. Explain the condition for incrementing it.
+1.  **Explain the Data Structures**: Clearly articulate why you chose two hash maps and doubly linked lists. Explain how `ref` provides fast access to nodes and `freqs` groups nodes by frequency.
+2.  **Walk Through `increment`**: This is the most complex part. Explain step-by-step how a node moves from one frequency list to another, and how `minFreq` is updated. Use a small example if needed.
+3.  **Handle Eviction Logic**: Detail how you identify the node to evict (head of `minFreq` DLL) and the steps involved in removing it from both `ref` and its DLL.
+4.  **Edge Cases**: Be prepared to discuss edge cases like `capacity = 0`, an empty cache, or when the cache becomes full.
 
 ## Revision Checklist
-- [ ] Understand the LFU eviction policy (least frequent, then least recently used).
-- [ ] Design the `Node` structure with key, value, frequency, and DLL pointers.
-- [ ] Design the `DLL` structure with head and tail pointers.
-- [ ] Implement `ref` HashMap for O(1) node lookup by key.
-- [ ] Implement `freqs` HashMap to map frequency to a `DLL`.
-- [ ] Implement `minFreq` to track the current minimum frequency.
-- [ ] Implement `get` operation: lookup, increment frequency, update DLLs.
-- [ ] Implement `put` operation: handle existing keys (update value, increment frequency) and new keys (evict if full, add new node, set frequency to 1).
-- [ ] Implement `increment` helper: remove from old DLL, add to new DLL, update `minFreq` if necessary.
-- [ ] Implement `removeNodeFrom` helper for DLL node removal.
-- [ ] Implement `putLastIn` helper for DLL node addition to tail.
-- [ ] Analyze time and space complexity.
-- [ ] Consider edge cases: empty cache, full cache, single-element DLLs.
+- [ ] Understand the LFU eviction policy.
+- [ ] Design the `Node` and `DLL` structures.
+- [ ] Implement `ref` map for O(1) node access.
+- [ ] Implement `freqs` map for O(1) frequency-based DLL access.
+- [ ] Correctly implement `removeNodeFrom` for DLLs.
+- [ ] Correctly implement `putLastIn` for DLLs.
+- [ ] Implement `get` with frequency increment.
+- [ ] Implement `put` for new and existing keys.
+- [ ] Handle cache full condition and eviction.
+- [ ] Accurately manage `minFreq`.
+- [ ] Consider `capacity = 0` edge case.
 
 ## Similar Problems
 *   LRU Cache
 *   Design Hit Counter
-*   All O(1) Data Structures
+*   All Oone Data Structure
 
 ## Tags
 `Hash Map` `Doubly Linked List` `Design`
