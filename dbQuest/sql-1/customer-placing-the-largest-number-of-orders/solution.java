@@ -1,0 +1,9 @@
+-- Write your PostgreSQL query statement below
+select customer_number from Orders
+group by customer_number
+order by count(order_number) desc
+limit 1;
+
+-- 1 -> 1
+-- 2 -> 1
+-- 3 -> 2
