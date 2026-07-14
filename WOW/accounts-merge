@@ -1,0 +1,60 @@
+class Solution {
+    // Union Find Algorithms (DSU)
+    public List<List<String>> accountsMerge(List<List<String>> accounts) {
+        int n = accounts.size();
+        DisjointSet ds = new DisjointSet(n);
+        HashMap<String,Integer> hm = new HashMap<>();
+        for(int i=0;i<n;i++){
+            for(int j=1;j<accounts.get(i).size();j++){
+                String mail = accounts.get(i).get(j);
+                if(hm.containsKey(mail)) ds.union(i,hm.get(mail)); //union
+                else hm.put(mail,i);
+            }
+        }
+        HashMap<Integer,List<String>> emailGroups = new HashMap<>();
+        for(String email : hm.keySet()){
+            int par = ds.find(hm.get(email)); //find
+            List<String> temp = emailGroups.getOrDefault(par,new ArrayList<>());
+            temp.add(email);
+            emailGroups.put(par,temp);
+        }
+
+        List<List<String>> ans = new ArrayList<>();
+        for(int parent : emailGroups.keySet()){
+            List<String> mails = emailGroups.get(parent);
+            Collections.sort(mails);
+            List<String> temp = new ArrayList<>();
+            temp.add(accounts.get(parent).get(0)); 
+            temp.addAll(mails);
+            ans.add(temp);
+        }
+        return ans;
+    }
+}
+class DisjointSet{
+    int[] parent;
+    int[] rank;
+    DisjointSet(int n){
+        this.parent = new int[n];
+        this.rank = new int[n];
+        for(int i =0 ; i<n;i++){
+            parent[i]=i;
+            rank[i] = 0;
+        }
+    }
+    public void union(int a, int b){
+        int parA = find(a);
+        int parB = find(b);
+        if(parA == parB) return;//already in the same group
+        if(rank[parA]>rank[parB]) parent[parB] = parA; //jiske rank zyada wo parent
+        else if(rank[parB]>rank[parA]) parent[parA] = parB;
+        else {
+            parent[parA] = parB; // make any of them parent but increment their rank by 1
+            rank[parB]++;
+        }  
+    }
+    public int find(int i){
+        if(parent[i]==i) return i;
+        return parent[i] = find(parent[i]);// find function with path-compression
+    }
+}
