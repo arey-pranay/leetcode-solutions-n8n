@@ -1,21 +1,13 @@
 class Solution {
     public List<Integer> spiralOrder(int[][] matrix) {
-        int m = matrix.length;
-        int n = matrix[0].length;
+        int m = matrix.length, n = matrix[0].length;
+        int x0 = 0, x1 = m-1, y0 = 0, y1 = n-1;
         List<Integer> ans = new ArrayList<>();
-        int top = 0;
-        int bottom = m-1;
-        int left = 0;
-        int right = n-1;
         while(ans.size() != m*n){
-            for (int i = left;i <= right; i++) ans.add(matrix[top][i]);
-            top++;
-            for (int i = top; ans.size() < m*n && i <= bottom; i++) ans.add(matrix[i][right]);
-            right--;
-            for (int i = right; ans.size() < m*n && i >= left; i--) ans.add(matrix[bottom][i]);
-            bottom--;
-            for (int i = bottom; ans.size() < m*n && i >=top ; i--) ans.add(matrix[i][left]);
-            left++;
+            for(int j=y0;j<=y1;j++) ans.add(matrix[x0][j]); x0++;
+            for(int i=x0;ans.size() < m*n && i<=x1;i++)ans.add(matrix[i][y1]); y1--;
+            for(int j=y1;ans.size() < m*n && j>=y0;j--) ans.add(matrix[x1][j]); x1--;
+            for(int i=x1;ans.size() < m*n && i>=x0;i--)ans.add(matrix[i][y0]); y0++;
         }
         return ans;
     }
