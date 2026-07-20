@@ -54,87 +54,121 @@ class Solution {
 
 ---
 ## Quick Revision
-Given a 2D grid and an integer k, shift the elements in the grid by k positions.
-This problem can be solved using a rotation algorithm that takes into account the wrap-around nature of a 2D array.
+The problem asks to shift elements of a 2D grid `k` times.
+We can solve this by treating the grid as a 1D array, performing the shift, and then converting back to a 2D grid.
 
 ## Intuition
-The key insight is to consider the grid as a 1D array where each element's index is calculated as `i * n + j`. After shifting, we calculate the new index by taking `(oldIndex + k) % total`, which effectively handles wrap-around. We then convert this 1D index back to a 2D coordinate using division and modulo operations.
+Imagine flattening the 2D grid into a single 1D array. Shifting the grid `k` times is equivalent to cyclically shifting this 1D array `k` positions to the right. The "aha moment" is realizing that we can map the 2D grid coordinates `(i, j)` to a 1D index `i * n + j`, perform the shift on this 1D index, and then map the new 1D index back to 2D coordinates `(newRow, newCol)`.
 
 ## Algorithm
-1. Initialize an empty result grid with the same dimensions as the input grid.
-2. Calculate the total number of elements in the grid (`m * n`) and the remainder `k` after dividing by this total (to handle wrap-around).
-3. Iterate over each element in the original grid, calculating its old index and new index using modular arithmetic.
-4. Convert the new 1D index back to a 2D coordinate (new row and column indices) using division and modulo operations.
-5. Place the shifted value at the calculated new position in the result grid.
+1. Get the dimensions of the grid: `m` (rows) and `n` (columns).
+2. Calculate the total number of elements in the grid: `total = m * n`.
+3. Normalize `k` by taking the modulo of `total`: `k %= total`. This handles cases where `k` is larger than the total number of elements.
+4. Create a new result grid (or list of lists) of the same dimensions, initialized with placeholder values (e.g., 0s).
+5. Iterate through each element of the original grid using nested loops (row `i` from 0 to `m-1`, column `j` from 0 to `n-1`).
+6. For each element `grid[i][j]`:
+    a. Calculate its 1D index: `oldIndex = i * n + j`.
+    b. Calculate its new 1D index after shifting `k` positions: `newIndex = (oldIndex + k) % total`.
+    c. Convert the `newIndex` back to 2D grid coordinates:
+        i. `newRow = newIndex / n`
+        ii. `newCol = newIndex % n`
+    d. Place the element `grid[i][j]` into the result grid at `ans[newRow][newCol]`.
+7. Return the result grid.
 
 ## Concept to Remember
-• **Modular Arithmetic**: wrapping around an array with periodic boundary conditions can be achieved by taking modulo of the index.
-• **1D Array Representation**: considering a 2D array as a single, contiguous 1D array can simplify calculations and avoid off-by-one errors.
-• **Wrap-around Logic**: modular arithmetic can handle wrap-around cases efficiently.
+*   **2D to 1D Mapping:** Understanding how to convert 2D array indices `(row, col)` to a single 1D index `row * num_cols + col` and vice-versa.
+*   **Modulo Arithmetic for Cyclic Shifts:** Using the modulo operator (`%`) to handle wrap-around behavior in cyclic shifts.
+*   **In-place vs. New Array:** Deciding whether to modify the original grid or create a new one for the result. This problem implies creating a new grid.
 
 ## Common Mistakes
-• Failing to consider the periodic boundary conditions when shifting elements.
-• Not handling edge cases where `k` is large compared to the grid size.
-• Incorrectly calculating the new index after shifting, leading to incorrect placement of values in the result grid.
+*   **Incorrect Modulo Calculation:** Forgetting to take `k % total` can lead to incorrect shifts if `k` is very large.
+*   **Off-by-One Errors:** Mistakes in calculating the 1D index or converting back to 2D indices.
+*   **Handling Edge Cases:** Not considering `k=0` or `k` being a multiple of `total` (which should result in no change).
+*   **Modifying Original Grid:** Attempting to shift in-place without a proper strategy can lead to overwriting values needed later.
 
 ## Complexity Analysis
-- Time: O(m * n) - reason: each element is visited once during iteration and calculation.
-- Space: O(m * n) - reason: a new grid of the same size is created as the result.
+- Time: O(m * n) - reason: We iterate through each element of the m x n grid exactly once to calculate its new position and place it in the result grid.
+- Space: O(m * n) - reason: We create a new grid (list of lists) of the same dimensions as the input grid to store the result.
 
 ## Commented Code
-
 ```java
 class Solution {
     public List<List<Integer>> shiftGrid(int[][] grid, int k) {
-        // total number of elements in the grid
+        // Get the number of rows in the grid.
         int m = grid.length;
+        // Get the number of columns in the grid.
         int n = grid[0].length;
-        int total = m * n;
 
-        // handle wrap-around by taking modulo of k
+        // Calculate the total number of elements in the grid.
+        int total = m * n;
+        // Normalize k by taking modulo total. This ensures k is within the bounds of the grid size and handles large k values.
         k %= total;
 
-        // create an empty result grid with same dimensions as input
+        // Initialize the result list of lists (representing the shifted 2D grid).
         List<List<Integer>> ans = new ArrayList<>();
+
+        // Pre-populate the result grid with empty rows.
         for (int i = 0; i < m; i++) {
+            // Create a new list for the current row.
             List<Integer> row = new ArrayList<>();
+            // Add n placeholder elements (0s) to the row. This is just to pre-size the row for efficient 'set' operations later.
             for (int j = 0; j < n; j++)
                 row.add(0);
+            // Add the initialized row to the answer list.
             ans.add(row);
         }
 
-        // shift elements and place them in the result grid
+        // Iterate through each element of the original grid.
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
+
+                // Calculate the 1D index of the current element grid[i][j] before shifting.
+                // This maps the 2D coordinate (i, j) to a linear index.
                 int oldIndex = i * n + j;
+
+                // Calculate the new 1D index after shifting k positions to the right.
+                // The modulo operator ensures that the index wraps around cyclically.
                 int newIndex = (oldIndex + k) % total;
 
-                // convert 1D index back to 2D coordinate
+                // Convert the new 1D index back to 2D grid coordinates (newRow, newCol).
+                // Integer division by n gives the new row.
                 int newRow = newIndex / n;
+                // The remainder when divided by n gives the new column.
                 int newCol = newIndex % n;
 
+                // Place the current element grid[i][j] into its new position in the answer grid.
+                // ans.get(newRow) retrieves the list representing the target row.
+                // .set(newCol, grid[i][j]) updates the element at the target column in that row.
                 ans.get(newRow).set(newCol, grid[i][j]);
             }
         }
 
+        // Return the final shifted grid.
         return ans;
     }
 }
 ```
 
 ## Interview Tips
-• Make sure you understand the periodic boundary conditions and how to handle them efficiently using modular arithmetic.
-• Practice explaining your thought process and solution clearly during the interview.
-• Be prepared to discuss edge cases and potential pitfalls in your solution.
+1.  **Explain the 1D Mapping:** Clearly articulate how you're converting 2D coordinates to a 1D index and back. This is the core of the solution.
+2.  **Discuss Modulo Arithmetic:** Emphasize why `k %= total` is crucial for correctness and efficiency, especially for large `k`.
+3.  **Consider Edge Cases:** Mention how your solution handles `k=0` or `k` being a multiple of `m*n` (no change) and how the modulo operator naturally covers these.
+4.  **Clarify Space Usage:** Be prepared to explain why you're using O(m*n) extra space (to create the new grid) and if an in-place solution is feasible (it's more complex and might not be required for an "easy" problem).
 
 ## Revision Checklist
-- [ ] Understand modular arithmetic and its application to wrap-around problems.
-- [ ] Review handling of edge cases, such as large values of k.
-- [ ] Double-check calculations for new indices after shifting elements.
+- [ ] Understand the problem statement: shifting elements `k` times.
+- [ ] Recognize the 2D to 1D mapping strategy.
+- [ ] Implement the `oldIndex = i * n + j` calculation.
+- [ ] Implement the `newIndex = (oldIndex + k) % total` calculation.
+- [ ] Implement the `newRow = newIndex / n` and `newCol = newIndex % n` conversions.
+- [ ] Handle `k` normalization: `k %= total`.
+- [ ] Correctly initialize and populate the result grid.
+- [ ] Analyze time and space complexity.
 
 ## Similar Problems
-• [LC 27. Remove Element](https://leetcode.com/problems/remove-element/)
-• [LC 485. Max Consecutive Ones](https://leetcode.com/problems/max-consecutive-ones/)
+*   1886. Rotate Image
+*   1260. Shift 2D Grid (This is the same problem)
+*   237. Delete Node in a Linked List (Concept of shifting/rearranging)
 
 ## Tags
-`Array`, `Hash Map`
+`Array` `Matrix` `Simulation`
