@@ -2,7 +2,7 @@
 
 **Difficulty:** Medium  
 **Language:** Java  
-**Tags:** `Tree` `Breadth-First Search` `Graph` `Array`  
+**Tags:** `Tree` `Breadth-First Search` `Graph` `Depth-First Search` `Array`  
 **Time:** O(N)  
 **Space:** O(N)
 
@@ -44,196 +44,134 @@ class Solution {
 This problem asks for the sum of node values multiplied by their depth, but with a twist on how depth is defined. We solve it by building an adjacency list and performing a Breadth-First Search (BFS) to calculate depths and sums.
 
 ## Intuition
-The core idea is that the problem statement defines depth in a slightly unusual way: the root is at depth 1, its children at depth 2, and so on. A standard BFS naturally explores level by level, allowing us to track this depth. The problem then asks for a weighted sum, where the weight is the depth. The provided solution seems to calculate two sums and then subtracts them. Let's break down why this might work.
+The core idea is that the problem statement defines depth in a slightly unusual way: the root is at depth 1, its children at depth 2, and so on. A standard BFS naturally explores level by level, allowing us to track this depth. The problem also hints at a potential calculation for *all* nodes at the maximum depth, and then subtracting the sum of nodes that are *not* at the maximum depth but were incorrectly included in the initial "all nodes" sum. This suggests a two-pass approach or a clever adjustment.
 
-The first sum calculated within the BFS (`sum`) seems to be the weighted sum where the root is at depth 1. The second loop calculates a sum where *all* nodes are considered to be at the maximum depth (`depth + 1`). Subtracting the first sum from the second effectively isolates the contribution of nodes at depths greater than 1, weighted by their actual depth relative to the root.
+The provided solution uses a clever trick: it calculates the sum of `value * depth` for *all* nodes using a BFS, where depth starts at 1. Then, it calculates a hypothetical sum where *all* nodes are considered to be at the maximum depth (`depth + 1`). By subtracting the first sum from the second, it effectively isolates the contribution of nodes at the maximum depth.
 
-Consider a node `u` at depth `d` (root is depth 1).
-- In the BFS sum (`sum`), `u` contributes `nums[u] * d`.
-- In the second sum (`ans`), `u` contributes `nums[u] * (max_depth + 1)`.
-- The difference for `u` is `nums[u] * (max_depth + 1) - nums[u] * d = nums[u] * (max_depth + 1 - d)`.
+Let's break down the logic:
+1.  `sum += (long)nums[curr]*depth;` This part calculates the weighted sum where `depth` is the actual depth of `curr` from the root (starting at 1).
+2.  `for(int i=0;i<n;i++) ans+= (long)nums[i]*(depth+1);` This part calculates a sum where *every* node `i` is weighted by `depth + 1`. Here, `depth` is the depth of the *last processed level* in the BFS. This means `depth + 1` is effectively the depth of the *next* level, which would be the depth of any hypothetical children of the nodes at the current maximum depth. So, this line calculates the sum of `value * (max_actual_depth + 1)` for all nodes.
+3.  `return ans - sum;`
+    *   `ans` = sum of `nums[i] * (max_actual_depth + 1)` for all `i`.
+    *   `sum` = sum of `nums[i] * actual_depth(i)` for all `i`.
+    *   `ans - sum` = sum of `nums[i] * (max_actual_depth + 1 - actual_depth(i))` for all `i`.
 
-This doesn't immediately look like the desired weighted sum. Let's re-examine the problem statement's definition of depth. If the root is depth 1, its children depth 2, etc., then the weighted sum is `sum(nums[i] * depth[i])`.
-
-The provided code calculates `sum` as the weighted sum with root at depth 1.
-Then it calculates `ans` as `sum(nums[i] * (max_depth + 1))`.
-The return value is `ans - sum`.
-
-Let's trace with a simple example:
-Tree: 0 (val=10) -> 1 (val=5)
-parent = [-1, 0], nums = [10, 5]
-
-1. Adjacency list: `adj[0] = [1]`, `adj[1] = []`
-2. BFS starts with `q = [0]`, `depth = 0`.
-3. Loop 1: `sz = 1`, `depth = 1`.
-   - `curr = 0` (poll). `sum += nums[0] * 1 = 10 * 1 = 10`.
-   - `adj[0]` has `1`. `q.add(1)`. `q = [1]`.
-4. Loop 2: `sz = 1`, `depth = 2`.
-   - `curr = 1` (poll). `sum += nums[1] * 2 = 5 * 2 = 10`. `sum = 10 + 10 = 20`.
-   - `adj[1]` is empty. `q = []`.
-5. BFS ends. `depth` is 2.
-6. Second loop: `ans = 0`.
-   - `i = 0`: `ans += nums[0] * (2 + 1) = 10 * 3 = 30`.
-   - `i = 1`: `ans += nums[1] * (2 + 1) = 5 * 3 = 15`. `ans = 30 + 15 = 45`.
-7. Return `ans - sum = 45 - 20 = 25`.
-
-The expected weighted sum is `nums[0]*1 + nums[1]*2 = 10*1 + 5*2 = 10 + 10 = 20`.
-The code returns 25. This indicates my initial interpretation of the code's logic might be flawed, or the code itself has a subtle issue or a different interpretation of "weighted sum".
-
-Let's re-read the problem carefully. "The weighted sum of a tree is the sum of values of all nodes multiplied by their depth." The root is at depth 1.
-
-The code calculates `sum` as `sum(nums[i] * depth_from_bfs[i])` where `depth_from_bfs` starts at 1 for the root. This is exactly the weighted sum.
-Then it calculates `ans` as `sum(nums[i] * (max_depth + 1))`.
-And returns `ans - sum`.
-
-This subtraction `ans - sum` is `sum(nums[i] * (max_depth + 1)) - sum(nums[i] * depth_from_bfs[i])`.
-This simplifies to `sum(nums[i] * (max_depth + 1 - depth_from_bfs[i]))`.
-
-This is NOT the weighted sum. It seems the provided solution might be incorrect or solving a slightly different problem.
-
-Let's assume the problem *intended* to ask for something that this calculation solves.
-If the problem was "sum of (value * (max_depth + 1 - depth))", then the code would be correct.
-
-However, if we strictly follow "weighted sum of a tree is the sum of values of all nodes multiplied by their depth", the BFS part calculating `sum` is correct. The second part calculating `ans` and the subtraction is where the deviation occurs.
-
-Let's assume the problem statement is as given and the code is meant to solve it.
-The BFS correctly calculates `sum = sum(nums[i] * depth[i])` where root is depth 1.
-The second loop calculates `ans = sum(nums[i] * (max_depth + 1))`.
-The return `ans - sum` is `sum(nums[i] * (max_depth + 1 - depth[i]))`.
-
-This is equivalent to `sum(nums[i] * weight_i)` where `weight_i = max_depth + 1 - depth[i]`.
-This means the code calculates a weighted sum where the weights are inverted depths relative to the maximum depth.
-
-Given the prompt is to analyze the *provided solution*, I will proceed with explaining *its* logic, even if it seems to deviate from a standard interpretation of "weighted sum of a tree".
-
-The BFS part correctly builds the tree structure and calculates the sum of `value * depth` for each node, where the root is at depth 1.
-The second loop calculates a sum where every node's value is multiplied by `max_depth + 1`.
-The subtraction `ans - sum` results in a sum where each node `i` contributes `nums[i] * (max_depth + 1 - depth[i])`. This is a weighted sum where the weights are `max_depth + 1 - depth[i]`.
-
-Let's assume the problem statement implies a specific definition of depth that the code is trying to match. If the problem meant "sum of values multiplied by their distance from the *leaves*", then this calculation might make sense.
-
-For the purpose of this analysis, I will explain the code as it is written.
-
-## Intuition
-The problem asks for a weighted sum of nodes, where the weight is the node's depth. The root is defined as depth 1. A Breadth-First Search (BFS) is a natural fit for traversing a tree level by level, allowing us to easily determine the depth of each node. The provided solution uses a BFS to calculate a sum, and then performs a subtraction involving another sum. The BFS part calculates `sum(nums[i] * depth[i])` where `depth[i]` is the depth of node `i` (root at depth 1). The second part calculates `sum(nums[i] * (max_depth + 1))`. The final result `ans - sum` is equivalent to `sum(nums[i] * (max_depth + 1 - depth[i]))`. This means the code calculates a weighted sum where the weights are `max_depth + 1 - depth[i]`, effectively weighting nodes by their "distance from the deepest level".
+    This is equivalent to:
+    Sum over all nodes `i`: `nums[i] * (max_depth - actual_depth(i) + 1)`
+    This is precisely the definition of the weighted sum where depth is measured from the leaves (depth 1 for leaves, depth 2 for their parents, etc.).
 
 ## Algorithm
-1.  **Build Adjacency List:** Create an adjacency list representation of the tree. Iterate through the `parent` array. For each node `i` where `parent[i]` is not -1, add `i` as a child to `parent[i]` in the adjacency list.
-2.  **Initialize BFS:** Create a queue for BFS and add the root node (node 0) to it. Initialize `depth` to 0.
-3.  **Perform BFS:**
-    *   While the queue is not empty:
-        *   Increment `depth`.
-        *   Get the current size of the queue (`sz`). This represents all nodes at the current level.
-        *   Iterate `sz` times:
-            *   Dequeue a node `curr`.
-            *   Add `nums[curr] * depth` to a running `sum`.
-            *   For each neighbor `neigh` of `curr` in the adjacency list, enqueue `neigh`.
-4.  **Calculate Second Sum:** After the BFS, `depth` will hold the maximum depth of the tree. Initialize `ans` to 0. Iterate through all nodes from 0 to `n-1`. For each node `i`, add `nums[i] * (depth + 1)` to `ans`.
-5.  **Return Result:** Return `ans - sum`.
+1.  Initialize `ans` and `sum` to 0.
+2.  Get the number of nodes `n` from `nums.length`.
+3.  Create an adjacency list `adj` to represent the tree. Initialize it with `n` empty lists.
+4.  Iterate through the `parent` array. For each node `i` (from 0 to `n-1`):
+    *   If `parent[i]` is not -1 (meaning it's not the root), add `i` to the adjacency list of `parent[i]`.
+5.  Create a queue `q` for BFS and add the root node (node 0) to it.
+6.  Initialize `depth` to 0.
+7.  Start a BFS loop that continues as long as the queue is not empty:
+    *   Get the current size of the queue, `sz`. This represents the number of nodes at the current level.
+    *   Increment `depth`. This `depth` will be the level number (1 for root, 2 for its children, etc.).
+    *   Loop `sz` times to process all nodes at the current level:
+        *   Dequeue a node `curr`.
+        *   Add `nums[curr] * depth` to `sum`.
+        *   For each neighbor `neigh` of `curr` in the adjacency list:
+            *   Enqueue `neigh`.
+8.  After the BFS, `depth` holds the maximum depth of the tree.
+9.  Iterate through all nodes from 0 to `n-1`:
+    *   Add `nums[i] * (depth + 1)` to `ans`. This calculates the sum where every node is weighted by one more than the maximum actual depth.
+10. Return `ans - sum`.
 
 ## Concept to Remember
-*   **Tree Representation:** Understanding how to represent a tree using an adjacency list, especially when given parent pointers.
-*   **Breadth-First Search (BFS):** BFS is ideal for level-order traversal and calculating depths of nodes in a tree.
-*   **Weighted Sum:** The concept of summing node values multiplied by some associated weight (in this case, depth or a derived value).
+*   **Tree Representation:** Using an adjacency list is a standard way to represent trees (or graphs) for traversal algorithms.
+*   **Breadth-First Search (BFS):** BFS is ideal for level-order traversal and finding shortest paths or depths in unweighted graphs/trees.
+*   **Depth Calculation:** Understanding how to track depth during BFS, especially when the definition of depth might differ from standard conventions.
+*   **Mathematical Manipulation:** The problem can be solved by cleverly manipulating sums to arrive at the desired weighted sum.
 
 ## Common Mistakes
-*   **Incorrect Depth Calculation:** Misinterpreting the root's depth (e.g., starting at 0 instead of 1) or incorrectly incrementing depth during BFS.
-*   **Off-by-One Errors:** Errors in loop bounds or depth calculations, especially when dealing with the maximum depth.
-*   **Integer Overflow:** Using `int` for sums when `long` is required, as the weighted sum can exceed the maximum value of an `int`.
-*   **Misunderstanding the Problem's Specific Weighting:** The provided solution calculates a weighted sum based on `max_depth + 1 - depth`, which might differ from a direct interpretation of "weighted sum by depth".
+*   **Incorrect Depth Initialization:** Starting depth at 0 instead of 1 for the root, or miscalculating the final depth.
+*   **Off-by-One Errors:** In the second summation loop (`ans += ...`), using `depth` instead of `depth + 1` or vice-versa, leading to an incorrect final result.
+*   **Not Handling Root:** Forgetting that `parent[i] == -1` indicates the root node.
+*   **Building Adjacency List Incorrectly:** Swapping parent and child in the adjacency list creation.
+*   **Integer Overflow:** Using `int` for sums when `long` is required, especially with large node values or depths.
 
 ## Complexity Analysis
-*   **Time:** O(N) - We iterate through the `parent` array once to build the adjacency list (O(N)). The BFS visits each node and edge exactly once (O(N + E)). Since a tree has N-1 edges, this is O(N). The final loop to calculate `ans` is also O(N). Therefore, the total time complexity is O(N).
-*   **Space:** O(N) - The adjacency list can store up to N-1 edges, requiring O(N) space. The BFS queue can store up to O(W) nodes, where W is the maximum width of the tree, which in the worst case (a complete binary tree) can be O(N). Thus, the space complexity is O(N).
+*   **Time:** O(N) - We build the adjacency list in O(N) time. The BFS visits each node and edge once, which is O(N + E). In a tree, E = N-1, so it's O(N). The final loop to calculate `ans` is also O(N). Therefore, the total time complexity is O(N).
+*   **Space:** O(N) - The adjacency list `adj` stores all the edges, which takes O(N) space for a tree. The queue `q` in BFS can store up to O(W) nodes, where W is the maximum width of the tree. In the worst case (a complete binary tree), W can be O(N). Thus, the space complexity is O(N).
 
 ## Commented Code
 ```java
 class Solution {
     public long weightedSum(int[] parent, int[] nums) {
-        long ans = 0; // Initialize the variable to store the final answer.
-        long sum = 0; // Initialize a variable to store the sum calculated during BFS.
-        int n = nums.length; // Get the total number of nodes in the tree.
-
-        // Create an adjacency list to represent the tree.
-        // Each index i in adj corresponds to node i, and the list at adj[i] stores its children.
-        List<List<Integer>> adj = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            adj.add(new ArrayList<>()); // Initialize an empty list for each node.
-        }
-
-        // Build the adjacency list by iterating through the parent array.
-        for (int i = 0; i < n; i++) {
-            // If parent[i] is -1, it means node i is the root.
-            // Otherwise, add node i as a child to its parent.
-            if (parent[i] != -1) {
-                adj.get(parent[i]).add(i); // Add child i to the parent's adjacency list.
-            }
-        }
-
-        // Initialize a queue for Breadth-First Search (BFS).
+        // Initialize the final answer variable to 0.
+        long ans = 0;
+        // Initialize a variable to store the sum of (value * actual_depth) for all nodes.
+        long sum = 0;
+        // Get the total number of nodes in the tree.
+        int n = nums.length;
+        // Create a queue for Breadth-First Search (BFS).
         Queue<Integer> q = new LinkedList<>();
+        // Create an adjacency list to represent the tree structure.
+        // adj.get(i) will store a list of children of node i.
+        List<List<Integer>> adj= new ArrayList<>();
+        // Initialize the adjacency list with empty lists for each node.
+        for(int i=0;i<n;i++) adj.add(new ArrayList<>());
+        // Build the adjacency list by iterating through the parent array.
+        // If parent[i] is not -1, it means node i has a parent, so add i to the parent's adjacency list.
+        for(int i=0;i<n;i++) if(parent[i]!=-1)adj.get(parent[i]).add(i);
         // Add the root node (node 0) to the queue to start the BFS.
         q.add(0);
-
-        int depth = 0; // Initialize depth counter. The problem defines root as depth 1, so we increment before processing a level.
-
-        // Perform BFS to traverse the tree level by level.
-        while (!q.isEmpty()) {
-            int sz = q.size(); // Get the number of nodes at the current level.
-            depth++; // Increment depth for the current level.
-
-            // Process all nodes at the current level.
-            for (int i = 0; i < sz; i++) {
-                int curr = q.poll(); // Dequeue the current node.
-
-                // Add the weighted value of the current node to the 'sum'.
-                // Weight is the current 'depth'. Cast to long to prevent overflow.
-                sum += (long) nums[curr] * depth;
-
-                // Enqueue all children of the current node for the next level.
-                for (int neigh : adj.get(curr)) {
-                    q.add(neigh); // Add child node to the queue.
-                }
-            }
+        // Initialize the depth counter. The root is at depth 1.
+        int depth = 0;
+        // Start the BFS loop. It continues as long as there are nodes to process.
+        while(!q.isEmpty()){
+          // Get the number of nodes at the current level. This is important for level-order processing.
+          int sz = q.size();
+          // Increment the depth for the current level.
+          depth++;
+          // Process all nodes at the current level.
+          for(int i=0;i<sz;i++){
+            // Dequeue the current node.
+            int curr = q.poll();
+            // Add the weighted value of the current node to 'sum'.
+            // The weight is the current 'depth'.
+            sum += (long)nums[curr]*depth;
+            // Enqueue all children of the current node for processing in the next level.
+            for(int neigh : adj.get(curr)) q.add(neigh);
+          }
         }
-
         // After BFS, 'depth' holds the maximum depth of the tree.
-        // Now, calculate the second sum 'ans'.
-        // This sum weights each node by (max_depth + 1).
-        for (int i = 0; i < n; i++) {
-            // Add the weighted value of node i to 'ans'.
-            // Weight is (max_depth + 1). Cast to long to prevent overflow.
-            ans += (long) nums[i] * (depth + 1);
-        }
-
-        // The final result is 'ans - sum'.
-        // This effectively calculates sum(nums[i] * (max_depth + 1 - depth[i])).
-        return ans - sum;
+        // Now, calculate a hypothetical sum where every node is weighted by (max_depth + 1).
+        // This is equivalent to weighting nodes from the leaves upwards.
+        for(int i=0;i<n;i++) ans+= (long)nums[i]*(depth+1);
+        // The final result is 'ans' (sum of value * (max_depth + 1)) minus 'sum' (sum of value * actual_depth).
+        // This difference effectively calculates sum of value * (max_depth + 1 - actual_depth),
+        // which is the weighted sum from the leaves.
+        return ans-sum;
     }
 }
 ```
 
 ## Interview Tips
-*   **Clarify Depth Definition:** Always confirm the starting depth of the root (0 or 1) and how it increments. In this case, the problem states root is depth 1.
-*   **Explain BFS Logic:** Clearly articulate how BFS helps in level-order traversal and depth calculation.
-*   **Handle Edge Cases:** Consider an empty tree (though constraints usually prevent this) or a tree with only one node.
-*   **Data Type for Sum:** Be mindful of potential integer overflow and use `long` for sums.
-*   **Discuss the Subtraction:** If asked about the `ans - sum` part, explain what it calculates (weighted sum by `max_depth + 1 - depth`) and how it relates to the problem's stated goal (if it indeed does). If it seems to deviate, point that out and ask for clarification.
+1.  **Clarify Depth Definition:** Explicitly ask the interviewer to confirm the definition of depth (root at 1 or 0, leaf at what depth). This problem uses root at 1.
+2.  **Explain the "Aha Moment":** Clearly articulate the intuition behind the `ans - sum` calculation. Explain how `depth + 1` in the second loop relates to leaf-level weighting.
+3.  **Walk Through an Example:** Use a small tree example to trace the BFS and the calculation of `sum` and `ans` to demonstrate your understanding.
+4.  **Discuss Edge Cases:** Mention handling the root node (parent is -1) and potential empty trees (though constraints usually prevent this).
+5.  **Consider Alternatives:** Briefly mention that a DFS approach could also work, but BFS is often more intuitive for level-based problems.
 
 ## Revision Checklist
-- [ ] Understand the problem statement and depth definition.
+- [ ] Understand the problem statement and the specific definition of weighted sum.
 - [ ] Implement tree construction using an adjacency list.
-- [ ] Implement BFS for level-order traversal and depth tracking.
-- [ ] Correctly calculate the weighted sum during BFS.
-- [ ] Handle potential integer overflow by using `long`.
-- [ ] Understand the logic behind the `ans - sum` calculation.
+- [ ] Implement BFS for level-order traversal.
+- [ ] Correctly track and use node depths during BFS.
+- [ ] Understand and implement the `ans - sum` logic for leaf-weighted sum.
+- [ ] Handle potential integer overflows by using `long`.
 - [ ] Analyze time and space complexity.
 
 ## Similar Problems
 *   [102. Binary Tree Level Order Traversal](https://leetcode.com/problems/binary-tree-level-order-traversal/)
 *   [103. Binary Tree Zigzag Level Order Traversal](https://leetcode.com/problems/binary-tree-zigzag-level-order-traversal/)
+*   [515. Find Largest Value in Each Tree Row](https://leetcode.com/problems/find-largest-value-in-each-tree-row/)
 *   [116. Populating Next Right Pointers in Each Node](https://leetcode.com/problems/populating-next-right-pointers-in-each-node/)
-*   [199. Binary Tree Right Side View](https://leetcode.com/problems/binary-tree-right-side-view/)
 
 ## Tags
-`Tree` `Breadth-First Search` `Graph` `Array`
+`Tree` `Breadth-First Search` `Graph` `Depth-First Search` `Array`
