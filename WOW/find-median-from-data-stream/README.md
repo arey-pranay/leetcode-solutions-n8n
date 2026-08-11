@@ -49,99 +49,88 @@ class MedianFinder {
 
 ---
 ## Quick Revision
-This problem asks to efficiently find the median of a stream of numbers as they are added.
-We solve this by maintaining two heaps: a max-heap for the smaller half and a min-heap for the larger half.
+This problem asks to efficiently find the median of a continuously growing stream of numbers.
+We solve it by maintaining two heaps: a max-heap for the smaller half and a min-heap for the larger half of the numbers.
 
 ## Intuition
-The median of a sorted list is the middle element (or the average of the two middle elements). If we can keep the numbers split into two halves such that the largest element of the smaller half is less than or equal to the smallest element of the larger half, we can easily find the median. Priority queues (heaps) are perfect for this because they efficiently give us the minimum or maximum element.
+The median is the middle element in a sorted list. If we can maintain two halves of the sorted list, where the smaller half is in a max-heap and the larger half is in a min-heap, the median will either be the top of the max-heap (if odd number of elements) or the average of the tops of both heaps (if even number of elements). The key is to keep these two heaps balanced in size.
 
 ## Algorithm
-1. Initialize two priority queues: `maxHeap` (for the smaller half) and `minHeap` (for the larger half). `maxHeap` should store elements in descending order, and `minHeap` in ascending order.
-2. When `addNum(num)` is called:
-    a. If `maxHeap` is empty or `num` is less than or equal to the top of `maxHeap`, add `num` to `maxHeap`.
-    b. Otherwise, add `num` to `minHeap`.
-3. Rebalance the heaps:
-    a. If `maxHeap` has more than one element more than `minHeap`, move the top element from `maxHeap` to `minHeap`.
-    b. If `minHeap` has more elements than `maxHeap`, move the top element from `minHeap` to `maxHeap`.
+1. Initialize two priority queues: `maxHeap` (for the smaller half, ordered in descending) and `minHeap` (for the larger half, ordered in ascending).
+2. Initialize a boolean flag `isEven` to `true`, indicating an even number of elements initially.
+3. When `addNum(num)` is called:
+    a. If `isEven` is true (meaning we are adding the first element to a new pair or the total count is even):
+        i. Add `num` to `minHeap`.
+        ii. Move the smallest element from `minHeap` to `maxHeap`. This ensures `maxHeap` always contains elements smaller than or equal to `minHeap`'s elements.
+    b. If `isEven` is false (meaning the total count is odd):
+        i. Add `num` to `maxHeap`.
+        ii. Move the largest element from `maxHeap` to `minHeap`. This ensures `minHeap` always contains elements larger than or equal to `maxHeap`'s elements.
+    c. Toggle the `isEven` flag.
 4. When `findMedian()` is called:
-    a. If the total number of elements is odd, the median is the top element of the larger heap (which will be `maxHeap` after rebalancing).
-    b. If the total number of elements is even, the median is the average of the top elements of `maxHeap` and `minHeap`.
-
-*Note: The provided solution uses a slightly different rebalancing strategy that achieves the same goal by always adding to one heap and then immediately moving an element to the other to maintain balance. It also uses a boolean flag `isEven` to track the total count parity.*
+    a. If `isEven` is true (even number of elements): The median is the average of the top elements of `maxHeap` and `minHeap`.
+    b. If `isEven` is false (odd number of elements): The median is the top element of `maxHeap` (which will hold the middle element).
 
 ## Concept to Remember
-*   **Heaps (Priority Queues):** Understanding how min-heaps and max-heaps work and their logarithmic time complexity for insertion and extraction.
-*   **Median Definition:** Knowing how to find the median for both odd and even sized datasets.
-*   **Data Stream Processing:** Techniques for handling data that arrives sequentially without storing the entire dataset.
-*   **Balancing Data Structures:** Maintaining a balanced state between two data structures to efficiently query properties like the median.
+*   **Heaps (Priority Queues):** Understanding how min-heaps and max-heaps work, and their logarithmic time complexity for insertion and extraction.
+*   **Median Definition:** The middle element of a sorted dataset, or the average of the two middle elements.
+*   **Balancing Data Structures:** The technique of using two heaps to maintain a balanced split of data for efficient median finding.
+*   **Two-Pointer/Two-Heap Approach:** A common pattern for problems involving finding a middle element or partitioning data.
 
 ## Common Mistakes
-*   **Incorrect Heap Initialization:** Forgetting to use `Collections.reverseOrder()` for the max-heap.
-*   **Improper Rebalancing:** Not ensuring that the sizes of the two heaps differ by at most one, leading to incorrect median calculations.
-*   **Off-by-One Errors in Median Calculation:** Incorrectly handling the cases for even and odd numbers of elements when calculating the median.
-*   **Not Handling Empty Heaps:** Failing to consider edge cases where one or both heaps might be empty during `addNum` or `findMedian`.
-*   **Integer Overflow:** Forgetting to cast to `double` before division when calculating the median for an even number of elements.
+*   **Incorrect Heap Initialization:** Forgetting to use `Collections.reverseOrder()` for the `maxHeap`.
+*   **Improper Balancing Logic:** Not correctly transferring elements between heaps to maintain the invariant that `maxHeap` elements are <= `minHeap` elements.
+*   **Off-by-One Errors in `isEven` Logic:** Mismanaging the `isEven` flag, leading to incorrect median calculation for odd/even counts.
+*   **Integer Division:** Forgetting to cast to `double` before division when calculating the median for an even number of elements.
+*   **Handling Empty Heaps:** Not considering edge cases where one or both heaps might be empty (though the provided solution implicitly handles this by always adding to one heap first).
 
 ## Complexity Analysis
-*   **Time:** O(log n) - For `addNum`, inserting into a heap takes O(log n) and polling/offering between heaps also takes O(log n). For `findMedian`, peeking at the top of a heap is O(1).
-*   **Space:** O(n) - To store all the numbers in the two heaps.
+*   **Time:** O(log n) - For `addNum`, we perform at most two heap insertions and two heap deletions, each taking O(log n) time. For `findMedian`, peeking at the top of heaps is O(1).
+*   **Space:** O(n) - We store all `n` numbers in the two heaps.
 
 ## Commented Code
 ```java
-import java.util.Collections; // Import Collections for reverseOrder
-import java.util.PriorityQueue; // Import PriorityQueue for heap implementation
+import java.util.Collections; // Import the Collections class for reverse order comparator
+import java.util.PriorityQueue; // Import the PriorityQueue class for heap implementation
 
 class MedianFinder {
-    // minHeap will store the larger half of the numbers. Its smallest element is at the top.
-    PriorityQueue<Integer> minHeap ;
-    // maxHeap will store the smaller half of the numbers. Its largest element is at the top.
-    PriorityQueue<Integer> maxHeap ;
-    // isEven tracks if the total number of elements added so far is even.
-    boolean isEven = true; // Initially, no elements, so it's even.
+    PriorityQueue<Integer> minHeap ; // This heap will store the larger half of the numbers. It's a min-heap, so the smallest of the larger half is at the top.
+    PriorityQueue<Integer> maxHeap ; // This heap will store the smaller half of the numbers. It's a max-heap (using reverseOrder), so the largest of the smaller half is at the top.
+    boolean isEven = true; // A flag to track if the total number of elements added so far is even. Initially true as no elements are added.
 
-    // Constructor to initialize the heaps.
     public MedianFinder() {
-       // Initialize minHeap as a standard min-priority queue.
-       minHeap = new PriorityQueue<>();
-       // Initialize maxHeap as a max-priority queue using Collections.reverseOrder().
+       minHeap = new PriorityQueue<>(); // Initialize the min-heap.
+       // Initialize the max-heap. Collections.reverseOrder() makes it a max-heap.
        maxHeap = new PriorityQueue<>(Collections.reverseOrder());
     }
     
-    // Method to add a number to the data stream.
     public void addNum(int num) {
-        // If the total count of numbers is currently even (meaning we are about to add the (2k+1)th element).
-        if(isEven){
-            // Add the new number to the minHeap first. This heap will temporarily hold the new number.
-            minHeap.offer(num);
+        // The logic here is to maintain the invariant:
+        // 1. All elements in maxHeap are less than or equal to all elements in minHeap.
+        // 2. The sizes of maxHeap and minHeap differ by at most 1.
+
+        if(isEven){ // If the total count of numbers is currently even (or we are adding the first element of a pair)
+            minHeap.offer(num); // Add the new number to the minHeap first.
             // Then, move the smallest element from minHeap to maxHeap.
-            // This ensures that maxHeap always contains elements smaller than or equal to elements in minHeap.
-            // And it helps maintain the balance by ensuring maxHeap gets the "larger" of the two halves.
+            // This ensures that the largest element of the smaller half (maxHeap) is correctly placed.
             maxHeap.offer(minHeap.poll());
-        } else { // If the total count of numbers is currently odd (meaning we are about to add the (2k+2)th element).
-            // Add the new number to the maxHeap first. This heap will temporarily hold the new number.
-            maxHeap.offer(num);
+        } else { // If the total count of numbers is currently odd
+            maxHeap.offer(num); // Add the new number to the maxHeap first.
             // Then, move the largest element from maxHeap to minHeap.
-            // This ensures that minHeap always contains elements larger than or equal to elements in maxHeap.
-            // And it helps maintain the balance by ensuring minHeap gets the "smaller" of the two halves.
+            // This ensures that the smallest element of the larger half (minHeap) is correctly placed.
             minHeap.offer(maxHeap.poll());
         }
-        // Toggle the isEven flag because we just added one number.
+        // After adding a number and rebalancing, toggle the flag.
+        // If it was even, it becomes odd. If it was odd, it becomes even.
         isEven = !isEven;
     }
     
-    // Method to find the median of all numbers added so far.
     public double findMedian() {
-        // If the total count of numbers is even (after the last addNum operation).
-        if(isEven) {
-            // The median is the average of the largest element in the smaller half (maxHeap.peek())
-            // and the smallest element in the larger half (minHeap.peek()).
-            // Cast to double to ensure floating-point division.
-            return (double)(minHeap.peek() + maxHeap.peek()) /2;
-        } else { // If the total count of numbers is odd.
-            // The median is the middle element, which will be the largest element in the smaller half (maxHeap.peek())
-            // because maxHeap will have one more element than minHeap in this case.
-            return maxHeap.peek();
-        }
+        // If the total count of numbers is even, the median is the average of the two middle elements.
+        // These are the largest element in the smaller half (top of maxHeap) and the smallest element in the larger half (top of minHeap).
+        if(isEven) return (double)(minHeap.peek() + maxHeap.peek()) /2;
+        // If the total count of numbers is odd, the median is the single middle element.
+        // This element will always be in the maxHeap (as we ensure maxHeap is either equal in size or one larger than minHeap).
+        return maxHeap.peek();
     }
 }
 
@@ -154,25 +143,25 @@ class MedianFinder {
 ```
 
 ## Interview Tips
-*   **Explain the Two-Heap Strategy:** Clearly articulate why two heaps (a max-heap and a min-heap) are necessary and how they divide the data.
-*   **Walk Through `addNum` Logic:** Verbally explain the insertion process and the rebalancing steps. Use a small example to illustrate how elements move between heaps.
-*   **Discuss `findMedian` Logic:** Explain how the median is derived from the top elements of the heaps based on whether the total count is even or odd.
-*   **Address Edge Cases:** Be prepared to discuss what happens when the first few numbers are added, or when heaps are empty.
-*   **Complexity Justification:** Be ready to explain the time and space complexity of both `addNum` and `findMedian` operations.
+*   **Explain the Two-Heap Strategy:** Clearly articulate why two heaps are necessary and how they maintain the sorted halves.
+*   **Walk Through `addNum` Logic:** Verbally trace the `addNum` method with a few examples (e.g., adding 1, then 2, then 3) to show how the heaps are balanced.
+*   **Discuss Edge Cases:** Mention what happens when the stream is empty or has only one element.
+*   **Clarify Median for Even/Odd Counts:** Be precise about how the median is calculated in both scenarios.
+*   **Ask About Constraints:** If not provided, ask about the potential range of numbers and the expected number of calls to `addNum` and `findMedian` to confirm the chosen approach is optimal.
 
 ## Revision Checklist
-- [ ] Understand the problem: find median from a data stream.
+- [ ] Understand the problem: finding median from a data stream.
 - [ ] Recall the two-heap approach (max-heap for smaller half, min-heap for larger half).
-- [ ] Implement `addNum` with correct heap insertion and rebalancing.
-- [ ] Implement `findMedian` for both even and odd total element counts.
+- [ ] Implement `addNum` with correct heap balancing logic.
+- [ ] Implement `findMedian` for both even and odd number of elements.
 - [ ] Analyze time and space complexity.
-- [ ] Consider edge cases (empty stream, first few elements).
+- [ ] Consider edge cases (empty stream, single element).
 - [ ] Practice explaining the intuition and algorithm clearly.
 
 ## Similar Problems
 *   Sliding Window Median
 *   Kth Largest Element in an Array
-*   Find Median from Data Stream (similar but often asked in a slightly different context or with variations)
+*   Find K Pairs with Smallest Sums
 
 ## Tags
-`Heap` `Two Pointers` `Design` `Data Stream`
+`Heap` `Two Pointers` `Data Stream`
