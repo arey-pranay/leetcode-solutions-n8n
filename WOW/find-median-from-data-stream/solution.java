@@ -1,32 +1,25 @@
 class MedianFinder {
-    PriorityQueue<Integer> minHeap ;
-    PriorityQueue<Integer> maxHeap ;
-    boolean isEven = true;
+    PriorityQueue<Integer> bigs;
+    PriorityQueue<Integer> smalls;
+    boolean isEven;
     public MedianFinder() {
-       minHeap = new PriorityQueue<>(); // minheap m humaare saare bade numbers jaayenge lekin vo niklne m unn sab bade numbers ka sbse chhote chhote niklenge
-       maxHeap = new PriorityQueue<>(Collections.reverseOrder());// maxheap m humare saare chhote numbers jaayenge lekin  vo nikaalne m sab chhote numbers m se jo bade bade hai vo niklenge
+        this.bigs = new PriorityQueue<>(); //minheap kyuki bde walo me se smallest chahiye median ke liye
+        this.smalls = new PriorityQueue<>((a,b)->b-a); // maxheap
+        this.isEven = true;
     }
     
-    public void addNum(int num) {
-        if(isEven){
-            minHeap.offer(num);
-            maxHeap.offer(minHeap.poll());
+    public void addNum(int num){
+        if(this.isEven){ // ek bar smalls me daaleneg ek baar bigs me
+          smalls.add(num);
+          bigs.add(smalls.poll());// balance krne ke liye smalls ka biggest number nikaal kr bigs me daala hai
         } else {
-            maxHeap.offer(num);
-            minHeap.offer(maxHeap.poll());
+          bigs.add(num);
+          smalls.add(bigs.poll());
         }
-        isEven = !isEven;
+        this.isEven = !this.isEven;
     }
     
     public double findMedian() {
-        if(isEven) return (double)(minHeap.peek() + maxHeap.peek()) /2;
-        return maxHeap.peek();
+        return isEven ? (bigs.peek()+smalls.peek())/2.0 : bigs.peek(); //by default uneven case me bigs me zyada elements hai
     }
 }
-
-/**
- * Your MedianFinder object will be instantiated and called as such:
- * MedianFinder obj = new MedianFinder();
- * obj.addNum(num);
- * double param_2 = obj.findMedian();
- */
