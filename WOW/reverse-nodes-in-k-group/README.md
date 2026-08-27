@@ -53,164 +53,132 @@ Reverse nodes of a linked list in groups of k.
 Solve by iterating through the list, reversing k nodes at a time, and connecting the reversed groups.
 
 ## Intuition
-The core idea is to treat the linked list as a series of segments of length `k`. For each segment, we need to reverse the nodes within it. The challenge lies in correctly linking the end of one reversed segment to the beginning of the next, and the beginning of the current segment to the end of the previous one. A dummy node at the beginning simplifies handling the head of the list. We also need to ensure we only reverse full groups of `k` nodes, leaving any remaining nodes at the end as they are.
+The core idea is to treat the linked list as a sequence of segments. We need to identify segments of length `k`, reverse them, and then re-link them. A dummy node is crucial to simplify the handling of the head of the list, especially when the first group needs to be reversed. We also need a way to count the total number of nodes to ensure we only reverse full groups of `k`.
 
 ## Algorithm
-1.  **Initialization**:
-    *   Create a `dummy` node that points to the `head` of the linked list. This simplifies edge cases, especially for the first group.
-    *   Initialize a pointer `prevGroupEnd` to `dummy`. This pointer will track the node *before* the current group to be reversed.
-2.  **Count Total Nodes**:
-    *   Iterate through the list to count the `total` number of nodes.
-3.  **Determine Reversible Groups**:
-    *   Calculate the number of full groups of `k` nodes that can be reversed: `numReversibleGroups = total / k`.
+1.  **Initialization**: Create a `dummy` node pointing to the `head` of the list. This simplifies edge cases, especially for the first group.
+2.  **Count Total Nodes**: Traverse the list to count the total number of nodes.
+3.  **Determine Reversible Groups**: Calculate how many full groups of `k` nodes can be reversed. This is `total_nodes - (total_nodes % k)`.
 4.  **Iterate and Reverse**:
-    *   Loop `numReversibleGroups` times. In each iteration:
-        *   Identify the `groupStart` (which is `prevGroupEnd.next`).
-        *   Identify the `groupEnd` (which is `k` nodes ahead of `groupStart`).
-        *   Store the node *after* `groupEnd` as `nextGroupStart`. This is crucial for reconnecting later.
-        *   **Reverse the current group**:
-            *   Initialize `current = groupStart` and `previous = null`.
-            *   Iterate `k` times:
-                *   Store `current.next` in a temporary variable `forward`.
-                *   Set `current.next = previous`.
-                *   Update `previous = current`.
-                *   Update `current = forward`.
-            *   After the loop, `previous` will be the new head of the reversed group, and `groupStart` will be the new tail.
-        *   **Reconnect the list**:
-            *   Set `prevGroupEnd.next = previous` (linking the previous segment to the new head of the reversed group).
-            *   Set `groupStart.next = nextGroupStart` (linking the new tail of the reversed group to the start of the next segment).
-            *   Update `prevGroupEnd = groupStart` (the tail of the current reversed group becomes the `prevGroupEnd` for the next iteration).
-5.  **Return Result**:
-    *   Return `dummy.next`, which points to the head of the modified linked list.
+    *   Use a pointer `temp` (initially `dummy`) to keep track of the node *before* the current group to be reversed.
+    *   Iterate `total_nodes - (total_nodes % k)` times, incrementing by `k` in each step.
+    *   In each iteration:
+        *   Call a helper function `rev` to reverse the next `k` nodes starting from `temp.next`.
+        *   The `rev` function should return an array/pair: the new head of the reversed group and the original head of the group (which becomes the tail after reversal).
+        *   Connect the `temp` node's `next` pointer to the new head of the reversed group.
+        *   Update `temp` to be the original head of the group (now the tail of the reversed group) to prepare for the next iteration.
+5.  **Helper Function `rev(head, k)`**:
+    *   Takes the start of a `k`-group and `k` as input.
+    *   Reverses `k` nodes using standard linked list reversal (iterative approach).
+    *   Crucially, it needs to connect the tail of the reversed group to the node *after* the original `k`-group.
+    *   Returns the new head of the reversed `k`-group and the original head (which is now the tail).
+6.  **Return**: Return `dummy.next`, which will be the new head of the modified list.
 
 ## Concept to Remember
-*   **Linked List Manipulation**: Reversing a portion of a linked list requires careful pointer management to avoid losing nodes.
-*   **Dummy Node**: Using a dummy node simplifies handling edge cases, especially when modifying the head of the list.
-*   **Iterative Reversal**: Reversing a sublist iteratively involves keeping track of the previous, current, and next nodes.
-*   **Group Processing**: The problem requires processing the list in segments, necessitating careful tracking of segment boundaries and connections.
+*   Linked List Manipulation: Reversing a sublist and re-linking nodes.
+*   Dummy Nodes: Simplifying head/tail operations in linked list problems.
+*   Iterative Reversal: Efficiently reversing a fixed number of nodes.
+*   Pointer Management: Carefully tracking `prev`, `curr`, and `next` pointers during reversal.
 
 ## Common Mistakes
-*   **Incorrectly handling the `next` pointer of the last node in a reversed group**: Forgetting to link it to the start of the next group (or `null` if it's the last group).
-*   **Losing track of the node *after* the current group**: This node is needed to reconnect the list after reversal.
-*   **Off-by-one errors when counting or reversing `k` nodes**: Ensuring exactly `k` nodes are reversed and the loop conditions are correct.
-*   **Not handling the case where the remaining nodes are less than `k`**: The problem states these should not be reversed.
-*   **Modifying pointers before saving necessary references**: For example, overwriting `current.next` before storing its original value.
+*   Incorrectly handling the `next` pointer of the last node in a reversed group, leading to broken links.
+*   Off-by-one errors when counting nodes or determining the number of groups to reverse.
+*   Not properly updating the `temp` pointer to the tail of the reversed group, preventing correct chaining of subsequent groups.
+*   Failing to handle the case where the list length is not a multiple of `k` (i.e., the last partial group should not be reversed).
+*   Modifying the original `head` pointer directly without using a `dummy` node, making edge cases harder to manage.
 
 ## Complexity Analysis
-- Time: O(N) - reason: We iterate through the linked list twice: once to count the total nodes and once to reverse the nodes in groups. Each node is visited a constant number of times.
-- Space: O(1) - reason: We only use a few extra pointers (dummy, prevGroupEnd, groupStart, groupEnd, current, previous, forward) to manage the reversal, which is constant extra space.
+- Time: O(N) - We traverse the list twice: once to count nodes and once to reverse groups. Each node is visited a constant number of times.
+- Space: O(1) - We only use a few extra pointers and a dummy node, which is constant extra space.
 
 ## Commented Code
 ```java
 class Solution {
     public ListNode reverseKGroup(ListNode head, int k) {
-        // Create a dummy node to simplify edge cases, especially for the head.
+        // Create a dummy node to simplify head operations.
         ListNode dummy = new ListNode(-1);
-        // Link the dummy node to the original head of the list.
+        // Point dummy's next to the original head.
         dummy.next = head;
         
-        // Initialize a pointer 'prevGroupEnd' to the dummy node.
-        // This pointer will always point to the node *before* the current group to be reversed.
-        ListNode prevGroupEnd = dummy;
-        
-        // Initialize a pointer 'current' to the head of the list to traverse and count nodes.
-        ListNode current = head;
-        // Variable to store the total number of nodes in the list.
-        int totalNodes = 0;
-        // Traverse the list to count the total number of nodes.
-        while(current != null){
-            current = current.next;
-            totalNodes++;
+        // Initialize a temporary pointer to traverse the list.
+        ListNode temp = head;
+        // Initialize a counter for the total number of nodes.
+        int total = 0;
+        // Traverse the list to count all nodes.
+        while(temp!=null){
+            // Move to the next node.
+            temp=temp.next;
+            // Increment the node count.
+            total++;
         }
         
-        // Calculate the number of full groups of 'k' nodes that can be reversed.
-        // We subtract the remainder of totalNodes divided by k to ensure we only process full groups.
-        int numFullGroups = totalNodes - (totalNodes % k);
+        // Reset temp to the dummy node to start processing groups.
+        temp = dummy;
+        // Calculate the number of nodes that can form full k-groups.
+        // We subtract the remainder to ensure only full groups are reversed.
+        total -= (total%k);
         
-        // Iterate through the list, processing 'k' nodes at a time.
-        // The loop increments by 'k' in each step, moving 'prevGroupEnd' to the end of the previously reversed group.
-        for(int i = 0; i < numFullGroups; i += k){
-            // 'groupStart' is the first node of the current group to be reversed.
-            ListNode groupStart = prevGroupEnd.next;
-            // 'nextGroupStart' is the node immediately following the current group.
-            // This is needed to reconnect the list after reversing the current group.
-            ListNode nextGroupStart = groupStart;
-            // Initialize 'prev' to null for the reversal process.
-            ListNode prev = null;
-            // 'curr' is used to iterate through the current group for reversal.
-            ListNode curr = groupStart;
-            
-            // Reverse the 'k' nodes in the current group.
-            for(int j = 0; j < k; j++){
-                // Store the next node before modifying the current node's 'next' pointer.
-                ListNode forward = curr.next;
-                // Reverse the pointer: current node points to the previous node.
-                curr.next = prev;
-                // Move 'prev' to the current node.
-                prev = curr;
-                // Move 'curr' to the next node in the original sequence.
-                curr = forward;
-            }
-            
-            // After the inner loop, 'prev' is the new head of the reversed group,
-            // and 'groupStart' is now the tail of the reversed group.
-            // 'curr' is pointing to the 'nextGroupStart'.
-            
-            // Connect the end of the previous group ('prevGroupEnd') to the new head of the reversed group ('prev').
-            prevGroupEnd.next = prev;
-            // Connect the tail of the reversed group ('groupStart') to the start of the next group ('curr').
-            groupStart.next = curr;
-            
-            // Update 'prevGroupEnd' to be the tail of the just-reversed group ('groupStart').
-            // This prepares for the next iteration, where 'groupStart' will be the node before the next group.
-            prevGroupEnd = groupStart;
+        // Iterate through the list, processing groups of k nodes.
+        // The loop increments by k, moving to the start of the next potential group.
+        for(int i=0;i<total;i+=k){
+          // Call the helper function 'rev' to reverse the next k nodes.
+          // 'temp.next' is the head of the current group to be reversed.
+          // 'rev' returns an array: ans[0] is the new head of the reversed group,
+          // and ans[1] is the original head of the group (now the tail).
+          ListNode[] ans = rev(temp.next,k); 
+          // Connect the previous node (temp) to the new head of the reversed group.
+          temp.next =  ans[0];
+          // Move temp to the tail of the reversed group (which was the original head).
+          // This prepares temp for the next iteration, pointing to the node before the next group.
+          temp = ans[1];
         }
         
-        // Return the head of the modified list, which is dummy.next.
+        // Return the next of the dummy node, which is the new head of the modified list.
         return dummy.next;
     }
     
-    // This helper function is not used in the provided solution but is a common pattern for reversing a sublist.
-    // The provided solution integrates the reversal logic directly into the main loop.
-    // If a helper function were used, it might look like this:
-    /*
-    public ListNode[] reverseSublist(ListNode head, int k) {
-        ListNode curr = head;
-        ListNode prev = null;
-        ListNode originalHead = head; // Keep track of the original head of the sublist
-        
-        while (k-- > 0 && curr != null) {
-            ListNode nextTemp = curr.next;
-            curr.next = prev;
-            prev = curr;
-            curr = nextTemp;
-        }
-        // prev is the new head of the reversed sublist
-        // originalHead is the new tail of the reversed sublist
-        // curr is the node after the reversed sublist
-        return new ListNode[]{prev, originalHead, curr}; // Returns new head, new tail, node after sublist
+    // Helper function to reverse k nodes starting from 'head'.
+    // Returns an array: [new_head_of_reversed_group, original_head_of_group_now_tail]
+    public ListNode[] rev(ListNode head , int k){
+      // Initialize current node to the head of the group.
+      ListNode curr = head;
+      // Initialize previous node to null.
+      ListNode prev = null;
+      // Loop k times to reverse k nodes.
+      while(k-->0){
+        // Store the next node before modifying curr.next.
+        ListNode fwd = curr.next;
+        // Reverse the pointer: current node points to the previous node.
+        curr.next = prev;
+        // Move prev to the current node.
+        prev = curr;
+        // Move curr to the next node (which was stored in fwd).
+        curr = fwd;
+      }
+      // After the loop, 'prev' is the new head of the reversed group.
+      // 'head' (the original head) is now the tail of the reversed group.
+      // Connect the tail of the reversed group ('head') to the node that comes after the original group ('curr').
+      head.next = curr;
+      // Return the new head ('prev') and the original head ('head', now the tail).
+      return new ListNode[]{prev,head};
     }
-    */
 }
 ```
 
 ## Interview Tips
-1.  **Clarify Edge Cases**: Ask about `k=1` (no reversal needed), empty list, and list length less than `k`.
-2.  **Visualize Pointer Movements**: Draw out the linked list and trace how pointers (`prevGroupEnd`, `groupStart`, `prev`, `curr`) move and change during reversal and reconnection. This is crucial for debugging.
-3.  **Explain the Dummy Node**: Clearly articulate why a dummy node is used and how it simplifies the logic, especially for the first group.
-4.  **Handle Remaining Nodes**: Emphasize that the problem requires leaving the last partial group unchanged and how your algorithm achieves this.
-5.  **Break Down the Reversal**: Explain the inner loop for reversing `k` nodes separately from the outer loop that iterates through groups.
+*   **Explain the Dummy Node**: Clearly articulate why a dummy node is used and how it simplifies the logic, especially for the first group.
+*   **Visualize the Reversal**: Walk through the `rev` function with a small example (e.g., k=3) to show how pointers are manipulated. Emphasize the connection of the tail of the reversed group to the rest of the list.
+*   **Handle Edge Cases**: Discuss what happens if `k=1` (no reversal needed), `k` is larger than the list length, or the list is empty.
+*   **Complexity Justification**: Be ready to explain why the time complexity is O(N) and space complexity is O(1).
 
 ## Revision Checklist
 - [ ] Understand the problem statement: reverse nodes in groups of `k`.
 - [ ] Identify the need for a dummy node.
-- [ ] Implement logic to count total nodes.
-- [ ] Determine the number of full groups to reverse.
-- [ ] Implement the iterative reversal of `k` nodes.
-- [ ] Correctly reconnect the reversed group to the previous and next segments.
-- [ ] Update the pointer for the end of the previous group.
+- [ ] Implement a function to reverse a sublist of `k` nodes.
+- [ ] Ensure the reversed sublist is correctly linked back to the main list.
 - [ ] Handle the case where the list length is not a multiple of `k`.
-- [ ] Test with edge cases: `k=1`, empty list, list length < `k`.
+- [ ] Count total nodes to determine the number of full groups.
+- [ ] Test with edge cases: empty list, `k=1`, `k` > list length.
 
 ## Similar Problems
 *   Reverse Linked List
