@@ -1,39 +1,34 @@
 class Solution {
     public String minWindow(String s, String t) {
-        HashMap<Character,Integer> freq = new HashMap<>();
-        for (char i : t.toCharArray()) freq.put(i, freq.getOrDefault(i, 0) + 1);
-        int index=-1;
-        int minLength = Integer.MAX_VALUE;
-        int count = t.length();
-        int i =0;
-        for(int j=0;j<s.length();j++){
+        int m = s.length();
+        int n = t.length();
+        int min = Integer.MAX_VALUE;
+        int start = -1;
+        HashMap<Character, Integer> needed = new HashMap<>();
+        for (char c : t.toCharArray()) needed.put(c, needed.getOrDefault(c, 0) + 1);
+        int wanted = t.length();
+        int i = 0;
+        for (int j = 0; j < m; j++) {
             char c = s.charAt(j);
-            if(freq.containsKey(c)){
-                if(freq.get(c) > 0) count--;
-                freq.put(c,freq.get(c)-1);
-            } 
-            
-                // XIADOBECODEBANC
-                //    i      j
-                //    2      7
-            while(count==0){
-// we will increment count only when we realize that we lost a useful character, so now let's increment j again to find that character
-              if(j+1 - i < minLength){
-                minLength = j+1 -i;
-                index = i;
-              }
-              char firstMatch = s.charAt(i);
-              if(freq.containsKey(firstMatch)){
-                int newCount = freq.get(firstMatch)+1;
-                freq.put(firstMatch, newCount);
-                if(newCount > 0) count++;
-              }
-              i++;
+            if (needed.containsKey(c)) {//valid character
+                int currF = needed.get(c);
+                if (currF> 0) wanted--;
+                needed.put(c, currF-1);
+            }
+            while (wanted == 0) {
+                if (min > j - i + 1) {
+                    min = j - i + 1;
+                    start = i;
+                }
+                char ci = s.charAt(i);
+                if (needed.containsKey(ci)) {
+                    int nowCount = needed.get(ci) + 1;
+                    needed.put(ci, nowCount);
+                    if (nowCount > 0) wanted++;
+                }
+                i++;
             }
         }
-        return index == -1 ? "" : s.substring(index,index+minLength);
+        return start == -1 ? "" : s.substring(start, start + min);
     }
 }
-// ADOBECODEBA
-// ADOBECODEBANC
-// ABC
