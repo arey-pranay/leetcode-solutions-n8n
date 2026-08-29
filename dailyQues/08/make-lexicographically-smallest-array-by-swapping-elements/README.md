@@ -42,102 +42,102 @@ class Solution {
 
 ---
 ## Quick Revision
-The problem asks to rearrange an array to be lexicographically smallest by swapping elements within certain constraints.
-We solve this by grouping elements that can be swapped and then sorting these groups independently.
+The problem asks to rearrange an array such that it becomes lexicographically smallest, with a constraint on swapping elements. Elements can only be swapped if their absolute difference is less than or equal to a given limit.
+We solve this by identifying groups of swappable elements, sorting each group independently, and then placing them back into the original array's positions.
 
 ## Intuition
-The core idea is that if two numbers `a` and `b` can be swapped, it means `abs(a - b) <= limit`. This implies that any number `x` can be swapped with any other number `y` if there's a chain of intermediate numbers `z1, z2, ..., zk` such that `abs(x - z1) <= limit`, `abs(z1 - z2) <= limit`, ..., `abs(zk - y) <= limit`. This forms connected components or "groups" of numbers that can be freely rearranged among themselves. To make the array lexicographically smallest, within each such group, we should place the smallest available numbers at the earliest possible indices.
+The core idea is that if two numbers `a` and `b` can be swapped (i.e., `abs(a - b) <= limit`), and `b` and `c` can be swapped (`abs(b - c) <= limit`), then `a`, `b`, and `c` are all part of the same "swappable" group. This means any element within such a connected group can be moved to any position occupied by another element in the same group. To achieve the lexicographically smallest array, we should sort these swappable elements within their respective groups and place them back in the order they appear in the original array.
 
 ## Algorithm
-1. Create a copy of the input array `nums` and sort it to get `sorted`.
-2. Initialize a list of lists `groups` to store the numbers belonging to each swappable group.
+1. Create a copy of the input array `nums` and sort it to get `sorted`. This `sorted` array will help us identify potential groups of swappable elements.
+2. Initialize a list of lists called `groups` to store the elements belonging to each swappable group.
 3. Initialize a hash map `hm` to store the group ID for each number in the `sorted` array.
-4. Iterate through the `sorted` array. If the current element is the first element or the absolute difference between the current element and the previous element is greater than `limit`, start a new group.
-5. Add the current element to the current group and store its group ID in the hash map.
-6. Initialize an array `indices` to keep track of the next available element to pick from each group.
-7. Iterate through the original `nums` array. For each element `nums[i]`:
-    a. Get its `groupID` from the hash map.
-    b. Get the list of `members` for that group.
-    c. Assign `nums[i]` the element from `members` at the index `indices[groupID]`, and then increment `indices[groupID]`.
-8. Return the modified `nums` array.
+4. Iterate through the `sorted` array. For each element `sorted[i]`:
+    a. If it's the first element or the absolute difference between `sorted[i]` and `sorted[i-1]` is greater than `limit`, it signifies the start of a new group. Increment `groupID`.
+    b. Add `sorted[i]` to the current group in `groups`.
+    c. Store the `groupID` of `sorted[i]` in the `hm`.
+5. Initialize an array `indices` of the same size as the number of groups. This array will keep track of the next available index to pick from each group.
+6. Iterate through the original `nums` array. For each element `nums[i]`:
+    a. Get the `groupID` of `nums[i]` from the `hm`.
+    b. Get the list of members for this `groupID` from `groups`.
+    c. Replace `nums[i]` with the element at `members.get(indices[groupID])`.
+    d. Increment `indices[groupID]` to point to the next element in that group for future assignments.
+7. Return the modified `nums` array.
 
 ## Concept to Remember
-*   **Lexicographical Order:** Understanding how to compare arrays based on element-by-element comparison from left to right.
-*   **Connected Components/Disjoint Set Union (Implicit):** The problem implicitly defines groups of elements that can be swapped. If `a` can swap with `b` and `b` with `c`, then `a` can effectively swap with `c` (transitively). This is similar to finding connected components.
-*   **Greedy Approach:** Within each group of swappable elements, placing the smallest elements at the earliest indices is the optimal strategy for lexicographical minimality.
+*   **Lexicographical Order:** Understanding how to minimize an array by placing smaller elements at earlier indices.
+*   **Disjoint Set Union (Implicit):** The problem implicitly forms connected components (groups) where elements can be swapped. While not explicitly using a DSU data structure, the logic of grouping based on a condition is similar.
+*   **Greedy Approach:** Within each identified swappable group, sorting the elements and placing them back greedily leads to the overall lexicographically smallest array.
 
 ## Common Mistakes
-*   **Incorrectly defining groups:** Not realizing that the "swappable" property is transitive and that groups are formed based on differences within the *sorted* array.
-*   **Modifying the original array while iterating:** This can lead to incorrect group assignments or element placements.
-*   **Not handling edge cases:** Forgetting to initialize groups or handle the first element correctly.
-*   **Inefficient group tracking:** Using a less efficient data structure than a hash map to quickly find the group of an element.
+*   **Incorrect Grouping Logic:** Failing to correctly identify the boundaries of swappable groups, especially when the difference is exactly `limit`.
+*   **Modifying Original Array Prematurely:** Trying to swap elements directly in the original array without first identifying all swappable groups can lead to incorrect results.
+*   **Index Management:** Errors in tracking which element from each group has already been placed back into the `nums` array.
+*   **Handling Duplicates:** Not considering how duplicate numbers might affect group assignments or index tracking.
 
 ## Complexity Analysis
-*   Time: O(N log N) - The dominant factor is sorting the array. The subsequent iterations and hash map operations are O(N).
-*   Space: O(N) - For storing the sorted array, the groups, and the hash map.
+*   **Time:** O(N log N) - The dominant factor is sorting the array initially (O(N log N)). The subsequent grouping and re-assignment loops are O(N).
+*   **Space:** O(N) - For storing the sorted copy of the array, the `groups` list (which can store up to N elements in total), and the `hm` hash map.
 
 ## Commented Code
 ```java
-import java.util.ArrayList; // Import ArrayList for dynamic lists
-import java.util.Arrays;    // Import Arrays for array operations like sorting and cloning
-import java.util.HashMap;   // Import HashMap for efficient key-value lookups
-import java.util.List;      // Import List interface
-
 class Solution {
     public int[] lexicographicallySmallestArray(int[] nums, int limit) {
-        int n = nums.length; // Get the length of the input array
-        int[] sorted = nums.clone(); // Create a clone of the original array to sort it without modifying the original yet
-        Arrays.sort(sorted); // Sort the cloned array to identify potential groups based on value differences
+        int n = nums.length; // Get the length of the input array.
+        int[] sorted = nums.clone(); // Create a copy of the original array to sort it.
+        Arrays.sort(sorted); // Sort the copied array. This helps in identifying groups of numbers that can be swapped.
 
-        List<List<Integer>> groups = new ArrayList<>(); // Initialize a list of lists to store elements belonging to each swappable group
-        HashMap<Integer, Integer> hm = new HashMap<>(); // Initialize a hash map to store the group ID for each number in the sorted array
-        int groupID = -1; // Initialize groupID counter, starting from -1 so the first group gets ID 0
+        List<List<Integer>> groups = new ArrayList<>(); // Initialize a list of lists to store elements belonging to each swappable group.
+        HashMap<Integer, Integer> hm = new HashMap<>(); // Initialize a hash map to store the group ID for each number. This allows quick lookup of a number's group.
+        int groupID = -1; // Initialize the group ID counter. It starts at -1 and increments for each new group.
 
-        // Iterate through the sorted array to form groups
+        // Iterate through the sorted array to identify and populate the groups.
         for (int i = 0; i < n; i++) {
-            // If it's the first element or the difference with the previous element is greater than the limit, start a new group
+            // If it's the first element or the difference between the current and previous sorted element is greater than the limit,
+            // it means we start a new group.
             if (i == 0 || Math.abs(sorted[i] - sorted[i - 1]) > limit) {
-                groups.add(new ArrayList<>()); // Add a new empty list to 'groups' for the new group
-                groupID++; // Increment the groupID for the new group
+                groups.add(new ArrayList<>()); // Add a new empty list to 'groups' for the new group.
+                groupID++; // Increment the group ID.
             }
-            groups.get(groupID).add(sorted[i]); // Add the current element from the sorted array to the current group
-            hm.put(sorted[i], groupID); // Map the current element to its assigned groupID in the hash map
+            groups.get(groupID).add(sorted[i]); // Add the current sorted number to the current group.
+            hm.put(sorted[i], groupID); // Map the current sorted number to its group ID in the hash map.
         }
 
-        int[] indices = new int[groups.size()]; // Initialize an array to keep track of the next index to pick from each group
-        // This array will help us pick elements from each group in their sorted order
+        int[] indices = new int[groups.size()]; // Initialize an array to keep track of the next available index to pick from each group.
+                                                // The size is the total number of groups found.
 
-        // Iterate through the original array to place elements into their final positions
+        // Iterate through the original 'nums' array to place the sorted elements back.
         for (int i = 0; i < n; i++) {
-            groupID = hm.get(nums[i]); // Get the groupID of the current element from the original array using the hash map
-            List<Integer> members = groups.get(groupID); // Get the list of all members belonging to this group
-            // Assign the current position in the original array with the next available smallest element from its group
-            nums[i] = members.get(indices[groupID]++); // Pick the element at 'indices[groupID]' from the 'members' list and then increment 'indices[groupID]' for the next pick from this group
+            groupID = hm.get(nums[i]); // Get the group ID for the current element in the original array.
+            List<Integer> members = groups.get(groupID); // Get the list of all members belonging to this group.
+            // Replace the current element in 'nums' with the next available sorted element from its group.
+            // 'indices[groupID]++' ensures we pick the next element from the group for subsequent occurrences of numbers from the same group.
+            nums[i] = members.get(indices[groupID]++);
         }
 
-        return nums; // Return the modified array, which is now the lexicographically smallest possible
+        return nums; // Return the modified array, which is now the lexicographically smallest possible.
     }
 }
 ```
 
 ## Interview Tips
-*   **Explain the grouping logic clearly:** Emphasize that elements can be swapped if they are "connected" through a chain of differences within the `limit`. The sorted array helps identify these initial connections.
-*   **Walk through an example:** Use a small example array and `limit` to demonstrate how groups are formed and how elements are placed back.
-*   **Discuss the "why" behind sorting:** Explain that sorting is crucial for identifying contiguous blocks of numbers that can be swapped.
-*   **Clarify the role of the hash map and indices array:** Explain how they efficiently map original numbers to their groups and track which element to pick next from each group.
+*   **Explain the Grouping:** Clearly articulate why sorting first and then checking differences helps identify swappable elements. Emphasize that if `a` can swap with `b`, and `b` with `c`, then `a`, `b`, and `c` are in the same swappable set.
+*   **Data Structures:** Justify the use of `ArrayList<List<Integer>>` for groups and `HashMap` for quick group lookup. Discuss alternatives if asked.
+*   **Edge Cases:** Consider cases with an empty array, an array with one element, or when `limit` is very large (all elements can be swapped).
 
 ## Revision Checklist
-- [ ] Understand the definition of lexicographical order.
-- [ ] Recognize that swappable elements form groups.
-- [ ] Understand how to identify these groups using the sorted array and the `limit`.
-- [ ] Implement the grouping logic correctly.
-- [ ] Implement the logic to place elements back into the original array using the identified groups.
-- [ ] Analyze time and space complexity.
+- [ ] Understand the definition of lexicographically smallest.
+- [ ] Identify the condition for swappable elements.
+- [ ] Realize that swappability is transitive, forming groups.
+- [ ] Plan to sort elements within each group.
+- [ ] Implement the grouping logic correctly using sorted array and limit.
+- [ ] Use a map to efficiently find the group of an original element.
+- [ ] Manage indices for picking elements from each group.
+- [ ] Verify time and space complexity.
 
 ## Similar Problems
-*   [807. Max Increase to Keep City Skyline](https://leetcode.com/problems/max-increase-to-keep-city-skyline/) (Conceptually similar in grouping/constraints)
-*   [1202. Smallest String With Swaps](https://leetcode.com/problems/smallest-string-with-swaps/) (Directly related to connected components and sorting within groups)
-*   [133. Clone Graph](https://leetcode.com/problems/clone-graph/) (Graph traversal, finding connected components)
+*   [1202. Smallest String With Swaps](https://leetcode.com/problems/smallest-string-with-swaps/)
+*   [1319. Number of Operations to Make Network Connected](https://leetcode.com/problems/number-of-operations-to-make-network-connected/) (concept of connected components)
 
 ## Tags
-`Array` `Hash Map` `Sorting` `Greedy`
+`Array` `Sorting` `HashMap` `Greedy`
