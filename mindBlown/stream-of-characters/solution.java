@@ -1,64 +1,51 @@
 class StreamChecker {
     class Node{
-        Node[] children;
-        boolean isEndOfWord;
-        Node(){
-            this.children = new Node[26];
-            this.isEndOfWord = false;
-        }
+       Node[] children;
+       boolean isEndOfWord;
+       Node(){
+         this.children = new Node[26];
+         this.isEndOfWord = false;
+       }
     }
     Node root = new Node();
-    StringBuilder stream = new StringBuilder("");
-    int maxLen = 0;
-    private void addWord(String word){
-        Node curr = root;
-        for(char c : word.toCharArray()){
-            int index = c-'a';
-            if(curr.children[index] == null) curr.children[index] = new Node();
-            curr = curr.children[index];
-        }   curr.isEndOfWord = true;
+    StringBuilder sb = new StringBuilder();
+    int maxLength = 0;
+    public void addNode(String word){
+      Node curr = root;
+      for(char c : word.toCharArray()){
+        int index = c-'a';
+        if(curr.children[index]==null) curr.children[index] = new Node();
+        curr = curr.children[index];
+      }
+      curr.isEndOfWord = true;
     }
+    public boolean findNode(String word){
+      Node curr = root;
+      int ran=0;
+      for(int i = word.length()-1; i>=0; i--){
+        ran++;
+        char c= word.charAt(i);
+        int index = c-'a';
+        if(curr.children[index]==null) return false; // iske aage koi valid path nhi hai, no match
+        curr = curr.children[index];
+        if(curr.isEndOfWord) return true; // mtlb query ka koi suffix match hogya humare given set me se
+      }
+      return false; // query string khtm hogya, but koi bhi isEndOfWord nhi aaya
+    }
+    
     public StreamChecker(String[] words) {
-        for(String word : words){
-            addWord(new StringBuilder(word).reverse().toString()); 
-            maxLen = Math.max(maxLen,word.length());
-        }      
+       for(String word : words){
+            addNode((new StringBuilder(word).reverse()).toString());
+            maxLength = Math.max(maxLength,word.length());
+       }
     }
+    
     public boolean query(char letter) {
-        stream.append(letter); //ab
-        Node curr = root;
-        for(int i=stream.length()-1; i>=0 && stream.length() - i <= maxLen; i--){
-            int index = stream.charAt(i)-'a';
-            if(curr.children[index] == null) return false;
-            curr = curr.children[index];
-            if(curr.isEndOfWord) return true;
-        }
-        return false;
+        if(sb.length()==maxLength) sb.deleteCharAt(0);
+        sb.append(letter);
+        return findNode(sb.toString());
     }
+    // jo bhi query se aa rha hai, that gets appended to the current string
+    // we need to tell ki current string ka koi bhi suffix words me hai ya nahi.
 }
 
-//     cd f kl
-    
-//        root
-//      /   \  \
-//     d    f   l
-//     /         \
-//    c           k .
-        // a 
-        // b 
-        // c 
-        // d true
-        // e 
-        // f true
-        // g 
-        // h
-        // i
-        // j
-        // k
-        // l true
-
-/**
- * Your StreamChecker object will be instantiated and called as such:
- * StreamChecker obj = new StreamChecker(words);
- * boolean param_1 = obj.query(letter);
- */
