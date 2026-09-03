@@ -2,9 +2,9 @@
 
 **Difficulty:** Hard  
 **Language:** Java  
-**Tags:** `Array` `String` `Design` `Trie` `Data Stream`  
-**Time:** O(N + M)  
-**Space:** O(N + M)
+**Tags:** `Array` `String` `Design` `Trie` `Data Stream` `Aho–Corasick Algorithm`  
+**Time:** O(m + n)  
+**Space:** O(n)
 
 ---
 
@@ -13,68 +13,56 @@
 ```java
 class StreamChecker {
     class Node{
-        Node[] children;
-        boolean isEndOfWord;
-        Node(){
-            this.children = new Node[26];
-            this.isEndOfWord = false;
-        }
+       Node[] children;
+       boolean isEndOfWord;
+       Node(){
+         this.children = new Node[26];
+         this.isEndOfWord = false;
+       }
     }
     Node root = new Node();
-    StringBuilder stream = new StringBuilder("");
-    int maxLen = 0;
-    private void addWord(String word){
-        Node curr = root;
-        for(char c : word.toCharArray()){
-            int index = c-'a';
-            if(curr.children[index] == null) curr.children[index] = new Node();
-            curr = curr.children[index];
-        }   curr.isEndOfWord = true;
+    StringBuilder sb = new StringBuilder();
+    int maxLength = 0;
+    public void addNode(String word){
+      Node curr = root;
+      for(char c : word.toCharArray()){
+        int index = c-'a';
+        if(curr.children[index]==null) curr.children[index] = new Node();
+        curr = curr.children[index];
+      }
+      curr.isEndOfWord = true;
     }
+    public boolean findNode(String word){
+      Node curr = root;
+      int ran=0;
+      for(int i = word.length()-1; i>=0; i--){
+        ran++;
+        char c= word.charAt(i);
+        int index = c-'a';
+        if(curr.children[index]==null) return false; // iske aage koi valid path nhi hai, no match
+        curr = curr.children[index];
+        if(curr.isEndOfWord) return true; // mtlb query ka koi suffix match hogya humare given set me se
+      }
+      return false; // query string khtm hogya, but koi bhi isEndOfWord nhi aaya
+    }
+    
     public StreamChecker(String[] words) {
-        for(String word : words){
-            addWord(new StringBuilder(word).reverse().toString()); 
-            maxLen = Math.max(maxLen,word.length());
-        }      
+       for(String word : words){
+            addNode((new StringBuilder(word).reverse()).toString());
+            maxLength = Math.max(maxLength,word.length());
+       }
     }
+    
     public boolean query(char letter) {
-        stream.append(letter); //ab
-        Node curr = root;
-        for(int i=stream.length()-1; i>=0 && stream.length() - i <= maxLen; i--){
-            int index = stream.charAt(i)-'a';
-            if(curr.children[index] == null) return false;
-            curr = curr.children[index];
-            if(curr.isEndOfWord) return true;
-        }
-        return false;
+        if(sb.length()==maxLength) sb.deleteCharAt(0);
+        sb.append(letter);
+        return findNode(sb.toString());
     }
+    // jo bhi query se aa rha hai, that gets appended to the current string
+    // we need to tell ki current string ka koi bhi suffix words me hai ya nahi.
 }
 
-//     cd f kl
-    
-//        root
-//      /   \  \
-//     d    f   l
-//     /         \
-//    c           k .
-        // a 
-        // b 
-        // c 
-        // d true
-        // e 
-        // f true
-        // g 
-        // h
-        // i
-        // j
-        // k
-        // l true
 
-/**
- * Your StreamChecker object will be instantiated and called as such:
- * StreamChecker obj = new StreamChecker(words);
- * boolean param_1 = obj.query(letter);
- */
 ```
 
 ---
@@ -82,109 +70,109 @@ class StreamChecker {
 ---
 
 ## Quick Revision
-Given a list of words, build an automaton that can query whether a given character stream matches any of the words.
-Solve it by building a trie and traversing it in reverse order.
+The problem requires implementing a StreamChecker class that can efficiently check if any suffix of the current query string is a word in a given set of words. The solution involves creating a trie data structure and maintaining a StringBuilder to store the current query string.
 
 ## Intuition
-The problem requires us to check if a given character stream matches any word in the input array. We can use a trie data structure to solve this problem efficiently. By building a trie from the reversed words, we can traverse the trie in reverse order for each query, effectively matching the character stream with the words.
+The key insight is to store the words in the trie in reverse order and maintain a StringBuilder to store the current query string. This allows us to efficiently check if any suffix of the current query string is a word in the given set.
 
 ## Algorithm
-1. Build a trie using the reversed words and store it as `root`.
-2. For each word, reverse it and add it to the trie by traversing through its characters.
-3. Store the maximum length of any word in `maxLen`.
-4. When querying a character stream, start from the end of the stream and traverse the trie in reverse order until we reach a leaf node or exceed the maximum length.
+
+1. Create a trie data structure to store the words in reverse order.
+2. Maintain a StringBuilder to store the current query string.
+3. In the query method, append the current character to the StringBuilder.
+4. Use the findNode method to check if any suffix of the current query string is a word in the given set.
+5. If the current query string is a word in the given set, return true. Otherwise, return false.
 
 ## Concept to Remember
-* Trie data structure and its applications.
-* Dynamic programming techniques for solving problems with overlapping subproblems.
-* Importance of considering time and space complexity when designing algorithms.
+
+* Trie data structure: a tree-like data structure in which every node stores a string and a set of child nodes.
+* String reversal: the process of reversing a string by iterating over it in reverse order.
+* Suffix matching: the process of finding all suffixes of a given string that match a pattern.
 
 ## Common Mistakes
-* Failing to consider the reversed words while building the trie.
-* Not properly handling edge cases, such as an empty character stream or a word that exceeds `maxLen`.
-* Not using dynamic programming techniques to optimize the query operation.
+
+* Failing to store the words in the trie in reverse order.
+* Not maintaining a StringBuilder to store the current query string.
+* Not checking if any suffix of the current query string is a word in the given set.
 
 ## Complexity Analysis
-- Time: O(N + M) - N is the total number of characters in all words and M is the maximum length of any word. This is because we build the trie once and traverse it for each query.
-- Space: O(N + M) - We need to store the trie, which has a size proportional to the input.
+- Time: O(m + n) where m is the length of the query string and n is the maximum length of a word in the given set.
+- Space: O(n) for storing the trie and O(m) for storing the StringBuilder.
 
 ## Commented Code
+
 ```java
 class StreamChecker {
-    class Node{
-        // Children nodes for each character (0-25)
+    class Node {
         Node[] children;
-        // Flag to indicate if this node represents the end of a word
         boolean isEndOfWord;
-        Node(){
-            // Initialize children array and flag
+
+        Node() {
             this.children = new Node[26];
             this.isEndOfWord = false;
         }
     }
-    
-    // Root node of the trie
+
     Node root = new Node();
-    // Character stream being queried
-    StringBuilder stream = new StringBuilder("");
-    // Maximum length of any word
-    int maxLen = 0;
+    StringBuilder sb = new StringBuilder();
+    int maxLength = 0;
 
-    /**
-     * Add a word to the trie by traversing its characters in reverse order.
-     */
-    private void addWord(String word){
+    public void addNode(String word) {
         Node curr = root;
-        for(char c : word.toCharArray()){
-            int index = c-'a';
-            // If the child node doesn't exist, create it
-            if(curr.children[index] == null) curr.children[index] = new Node();
+        for (char c : word.toCharArray()) {
+            int index = c - 'a';
+            if (curr.children[index] == null) curr.children[index] = new Node();
             curr = curr.children[index];
         }
-        curr.isEndOfWord = true; // Mark the end of the word
+        curr.isEndOfWord = true;
     }
 
-    /**
-     * Constructor to initialize the trie with reversed words.
-     */
+    public boolean findNode(String word) {
+        Node curr = root;
+        int ran = 0;
+        for (int i = word.length() - 1; i >= 0; i--) {
+            ran++;
+            char c = word.charAt(i);
+            int index = c - 'a';
+            if (curr.children[index] == null) return false; // iske aage koi valid path nhi hai, no match
+            curr = curr.children[index];
+            if (curr.isEndOfWord) return true; // mtlb query ka koi suffix match hogya humare given set me se
+        }
+        return false; // query string khtm hogya, but koi bhi isEndOfWord nhi aaya
+    }
+
     public StreamChecker(String[] words) {
-        for(String word : words){
-            addWord(new StringBuilder(word).reverse().toString()); 
-            maxLen = Math.max(maxLen,word.length());
-        }      
+        for (String word : words) {
+            addNode((new StringBuilder(word).reverse()).toString());
+            maxLength = Math.max(maxLength, word.length());
+        }
     }
 
-    /**
-     * Query whether a character stream matches any word in the trie.
-     */
     public boolean query(char letter) {
-        // Append the new character to the stream
-        stream.append(letter); 
-        Node curr = root;
-        for(int i=stream.length()-1; i>=0 && stream.length() - i <= maxLen; i--){
-            int index = stream.charAt(i)-'a';
-            if(curr.children[index] == null) return false; // No match found
-            curr = curr.children[index];
-            if(curr.isEndOfWord) return true; // Found a matching word
-        }
-        return false;
+        if (sb.length() == maxLength) sb.deleteCharAt(0);
+        sb.append(letter);
+        return findNode(sb.toString());
     }
 }
 ```
 
 ## Interview Tips
 
-* Be prepared to explain the time and space complexity of your solution.
-* Show how you handle edge cases, such as an empty character stream or a word that exceeds `maxLen`.
-* Consider using dynamic programming techniques to optimize the query operation.
+* Make sure to understand the problem requirements carefully.
+* Use a data structure like trie to efficiently store and search the words.
+* Maintain a StringBuilder to store the current query string.
+* Think about the time and space complexity of your solution.
 
 ## Revision Checklist
-- [ ] Understand the problem requirements.
-- [ ] Build a trie from reversed words efficiently.
-- [ ] Optimize the query operation using dynamic programming.
-- [ ] Handle edge cases properly.
+- [ ] Understand the problem requirements carefully.
+- [ ] Use a data structure like trie to efficiently store and search the words.
+- [ ] Maintain a StringBuilder to store the current query string.
+- [ ] Think about the time and space complexity of your solution.
 
 ## Similar Problems
+* LeetCode: 677. Robot Return to the Origin
+* LeetCode: 134. Gas Station
+* LeetCode: 151. Reverse Words in a String
 
-* LeetCode: 211. Design Add and Search Words Data Structure
-* LeetCode: 677. Map Sum Pairs
+## Tags
+`Array` `Hash Map` `Trie` `String` `Substring` `String Reversal`
