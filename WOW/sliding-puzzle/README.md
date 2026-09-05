@@ -70,16 +70,9 @@ class Solution {
       return hash;
     }
     public int[][] decode(int hash){
-        int[][] decodedBoard = new int[m][n];
-        int i = m-1;
-        int j = n-1;
-        while(hash>0){
-            decodedBoard[i][j] = hash%10;
-            hash /= 10;
-            j--;
-            if(j==-1) {i--;j=n-1;}
-        }
-        return decodedBoard;
+        int[][] board = new int[m][n];
+        for(int i=m-1;i>=0;i--) for(int j=n-1;j>=0;j--){board[i][j] = hash%10; hash/=10;}
+        return board;
     }
 }
 ```
@@ -88,172 +81,179 @@ class Solution {
 
 ---
 ## Quick Revision
-This problem asks for the minimum number of moves to solve a sliding puzzle, similar to the 8-puzzle.
-We can solve this using Breadth-First Search (BFS) on the state space of the puzzle.
+This problem asks for the minimum number of moves to solve a sliding puzzle by moving the empty tile (0).
+We solve this using Breadth-First Search (BFS) to explore all possible states and find the shortest path.
 
 ## Intuition
-The sliding puzzle can be viewed as a graph where each valid configuration of the board is a node, and an edge exists between two nodes if one configuration can be reached from the other by a single valid move (swapping the 0 with an adjacent tile). Since we want the minimum number of moves, BFS is the natural choice because it explores the graph layer by layer, guaranteeing that the first time we reach the solved state, it will be via the shortest path.
+The sliding puzzle can be viewed as a state-space search problem. Each configuration of the puzzle is a state, and a valid move (swapping the empty tile with an adjacent tile) transitions between states. Since we want the minimum number of moves, BFS is the natural choice because it explores states layer by layer, guaranteeing that the first time we reach the solved state, it will be via the shortest path.
 
-The key challenge is efficiently representing and comparing board states. A 2D array is cumbersome to use as a key in a visited set or a queue. Converting the 2D board into a single integer (hashing) allows for quick lookups and storage.
+The key challenge is efficiently representing and comparing states. Using a 2D array directly in a `HashSet` is not feasible. Therefore, we need a way to uniquely identify each puzzle configuration. Encoding the 2D board into a single integer (or string) allows us to use a `HashSet` to keep track of visited states and avoid redundant computations.
 
 ## Algorithm
 1.  **Initialization**:
     *   Determine the dimensions `m` and `n` of the board.
-    *   Find the initial position `(x, y)` of the empty tile (0).
-    *   Create the `solved` board configuration and calculate its integer hash (`solvedHash`).
-    *   Initialize a queue `q` for BFS. Each element in the queue will store `[current_x, current_y, moves, current_hash]`.
-    *   Initialize a `HashSet` called `hashes` to keep track of visited board states (represented by their integer hashes).
-    *   Add the initial state `[x, y, 0, initial_hash]` to the queue and `initial_hash` to the `hashes` set.
+    *   Find the initial position (`x`, `y`) of the empty tile (0).
+    *   Create the `solved` board configuration and calculate its integer `solvedHash`.
+    *   Initialize a queue `q` for BFS, storing `[row, col, moves, current_hash]`.
+    *   Initialize a `HashSet` `hashes` to store visited states (encoded as integers).
+    *   Add the initial state `[x, y, 0, encode(board)]` to the queue and its hash to `hashes`.
 
 2.  **BFS Loop**:
     *   While the queue is not empty:
-        *   Dequeue the current state `[cx, cy, moves, hash]`.
-        *   If `hash` is equal to `solvedHash`, return `moves`.
-        *   Decode the `hash` back into a 2D `newBoard` for manipulation.
-        *   Iterate through the four possible directions (up, down, left, right) using the `neigh` array.
-        *   For each direction, calculate the coordinates `(X, Y)` of the adjacent tile.
+        *   Dequeue a state `[cx, cy, moves, hash]`.
+        *   If `hash` equals `solvedHash`, return `moves`.
+        *   Decode the `hash` back into a 2D `newBoard`.
+        *   Iterate through the four possible directions (up, down, left, right) for the empty tile.
+        *   For each direction, calculate the new coordinates (`X`, `Y`) of the tile to swap with.
         *   **Boundary Check**: If `(X, Y)` is out of bounds, continue to the next direction.
         *   **Swap**: Swap the empty tile at `(cx, cy)` with the tile at `(X, Y)` in `newBoard`.
         *   **Encode**: Calculate the `newHash` of the modified `newBoard`.
         *   **Visited Check**: If `newHash` has not been visited (i.e., not in `hashes`):
-            *   Add `newHash` to the `hashes` set.
+            *   Add `newHash` to `hashes`.
             *   Enqueue the new state `[X, Y, moves + 1, newHash]`.
-        *   **Backtrack Swap**: Swap the tiles back in `newBoard` to restore it to its state before the current move, so that other moves from `(cx, cy)` can be explored correctly.
+        *   **Backtrack Swap**: Swap the tiles back in `newBoard` to restore it for exploring other moves from the current state.
 
-3.  **No Solution**: If the queue becomes empty and the solved state is not found, return -1.
+3.  **No Solution**: If the queue becomes empty and the solved state is not reached, return -1.
 
 ## Concept to Remember
-*   **Breadth-First Search (BFS)**: Optimal for finding the shortest path in an unweighted graph.
-*   **State Space Search**: Representing all possible configurations of a problem as nodes in a graph.
-*   **Hashing/Encoding**: Converting complex data structures (like 2D arrays) into a simpler, comparable form (like integers) for efficient storage and lookup in hash sets/maps.
-*   **Backtracking**: Reverting changes after exploring a path to allow exploration of alternative paths.
+*   **Breadth-First Search (BFS)**: Optimal for finding the shortest path in an unweighted graph (state space).
+*   **State Representation**: Efficiently encoding complex states (like a 2D board) into a hashable format (like an integer) for use in sets/maps.
+*   **Graph Traversal**: Understanding how to explore nodes (states) and edges (moves) in a graph.
+*   **Visited Set**: Crucial for preventing infinite loops and redundant computations in graph search algorithms.
 
 ## Common Mistakes
-*   **Inefficient State Representation**: Using the 2D array directly in the queue or visited set, leading to slow comparisons and high memory usage.
-*   **Forgetting to Backtrack Swap**: Failing to swap the tiles back after exploring a move, which corrupts the board state for subsequent moves from the same position.
-*   **Incorrect Boundary Checks**: Not properly checking if the adjacent tile is within the board dimensions.
-*   **Integer Overflow/Encoding Issues**: If the board size is large, the integer encoding might overflow or not uniquely represent all states. (Though for typical puzzle sizes, this is usually fine).
-*   **Not Handling the Solved State Correctly**: Missing the check for the solved state or returning the wrong number of moves.
+*   **Inefficient State Representation**: Trying to use 2D arrays directly in `HashSet` or `HashMap` without proper serialization.
+*   **Not Handling Boundary Conditions**: Failing to check if the new tile position is within the board dimensions.
+*   **Forgetting to Backtrack Swap**: Modifying the board in place and not reverting the swap after exploring a path, leading to incorrect subsequent states.
+*   **Incorrect Encoding/Decoding**: Errors in converting the 2D board to an integer and back, leading to incorrect state comparisons.
+*   **Not initializing the visited set correctly**: Missing the initial state or not adding it to the visited set.
 
 ## Complexity Analysis
-*   **Time**: O(M * N * 2^(M*N)) in the worst case.
-    *   The state space can be up to (M*N)! for a general permutation puzzle. For the sliding puzzle, it's constrained by the 0's movement. The number of reachable states is bounded.
-    *   Each state is visited at most once. For each state, we perform constant number of operations (swapping, encoding, decoding, checking neighbors).
-    *   The encoding/decoding takes O(M*N) time.
-    *   The number of possible states for a 2x3 board is 362,880. For a 3x3 board (8-puzzle), it's 9!/2 = 181,440. The complexity is roughly proportional to the number of reachable states.
-*   **Space**: O(M * N * 2^(M*N)) in the worst case.
-    *   The `HashSet` `hashes` stores all visited states.
-    *   The `Queue` `q` can also store a significant number of states.
-    *   The space complexity is dominated by the storage of visited states.
+*   **Time**: O(M * N * 2^(M*N)) - In the worst case, we might visit all possible permutations of the board. For a 2x3 board, there are 362,880 permutations. The `encode` and `decode` operations take O(M*N) time. The `neigh` array is constant size.
+*   **Space**: O(M * N * 2^(M*N)) - The `HashSet` can store up to all possible states, and each state's encoded representation takes O(M*N) space (implicitly, as it's an integer derived from M*N digits). The queue can also store a significant number of states.
 
 ## Commented Code
 ```java
 class Solution {
-    // neigh array stores the relative movements for the 4 directions:
-    // neigh[0] = -1 (up), neigh[1] = 0 (no horizontal move)
-    // neigh[1] = 0 (no vertical move), neigh[2] = 1 (right)
-    // neigh[2] = 1 (right), neigh[3] = 0 (no vertical move)
-    // neigh[3] = 0 (no horizontal move), neigh[4] = -1 (down)
-    // This pattern is used to get (dx, dy) pairs: (-1,0), (0,1), (1,0), (0,-1)
-    int[] neigh = {-1,0,1,0,-1};
-    // Stores the integer hash of the solved puzzle state.
+    // Array to represent the neighbors of a tile (up, right, down, left)
+    // neigh[0] = dx for up, neigh[1] = dy for up
+    // neigh[2] = dx for right, neigh[3] = dy for right
+    // ... and so on. This is a common trick for 4-directional movement.
+    int[] neigh = {-1,0,1,0,-1}; // Corresponds to: up, right, down, left relative moves in (dx, dy) pairs.
+    
+    // The integer representation of the solved board state.
     int solvedHash;
+    
     // Dimensions of the board.
     int m;
     int n;
-    // HashSet to store the integer hashes of all visited board configurations.
+    
+    // A set to keep track of all visited board configurations (encoded as integers).
     HashSet<Integer> hashes = new HashSet<>();
-
+    
     // Main function to solve the sliding puzzle.
     public int slidingPuzzle(int[][] board) {
       // Get the dimensions of the board.
       m = board.length;
       n = board[0].length;
+      
       // Variables to store the initial row and column of the empty tile (0).
       int x =0,y=0;
-      // Create a 2D array to represent the solved state of the puzzle.
+      
+      // Create a 2D array to represent the solved state.
       int[][] solved = new int[m][n];
       // Variable to fill the solved board with numbers 1, 2, 3...
       int num = 1;
-      // Iterate through the input board to:
-      // 1. Populate the 'solved' board with sequential numbers.
-      // 2. Find the initial position (x, y) of the empty tile (0).
+      
+      // Populate the 'solved' board and find the initial position of '0'.
       for(int i=0;i<m;i++) {
-          for(int j=0;j<n;j++){
-              solved[i][j] = num++; // Assign sequential number to solved board.
-              if(board[i][j]==0){ // If the current tile is the empty tile.
-                  x=i; // Store its row.
-                  y=j; // Store its column.
+          for(int j=0;j<n;j++) {
+              // Assign the next number to the solved board.
+              solved[i][j] = num++;
+              // If the current cell in the input board is '0', record its position.
+              if(board[i][j]==0){
+                  x=i;
+                  y=j;
               }
           }
       }
-      // The last tile in the solved board should be 0 (the empty tile).
+      // The solved state has '0' at the bottom-right corner.
       solved[m-1][n-1] = 0;
-      // Calculate the integer hash of the solved board configuration.
+      
+      // Calculate the integer hash for the solved board state.
       solvedHash = encode(solved);
+      
       // Start the Breadth-First Search (BFS) from the initial state.
-      // Pass the initial position of the empty tile and the initial board.
+      // Pass the initial position of '0' and the initial board configuration.
       return bfs(x,y,board);
     }
-
-    // Breadth-First Search function to find the shortest path to the solved state.
+    
+    // Breadth-First Search function to find the shortest path.
     public int bfs(int x, int y, int[][] board){
       // Initialize the answer to a very large value, indicating no solution found yet.
       int ans = Integer.MAX_VALUE;
-      // Calculate the integer hash of the initial board configuration.
+      
+      // Encode the initial board configuration into an integer hash.
       int startHash = encode(board);
-      // Create a queue for BFS. Each element will store:
-      // [current_x_of_zero, current_y_of_zero, number_of_moves, current_board_hash]
+      
+      // Queue for BFS. Each element is an array: [current_row, current_col, moves_made, current_hash].
       Queue<int[]> q = new LinkedList<>();
-      // Offer the initial state to the queue.
+      
+      // Offer the initial state to the queue: starting position of '0', 0 moves, and its hash.
       q.offer(new int[]{x,y,0,startHash});
-      // Add the hash of the initial state to the set of visited states.
+      
+      // Add the initial state's hash to the set of visited states.
       hashes.add(startHash);
-
-      // Start the BFS loop.
+      
+      // Loop while there are states to explore in the queue.
       while(!q.isEmpty()){
-        // Dequeue the current state from the queue.
+        // Dequeue the current state.
         int[] curr = q.poll();
-        // Extract current position of zero, moves made, and the hash of the current board.
+        // Extract current row, column, moves, and hash from the dequeued state.
         int cx = curr[0], cy = curr[1], moves = curr[2], hash = curr[3];
-
-        // Check if the current board configuration is the solved state.
+        
+        // Check if the current state is the solved state.
         if(isSolved(hash)) return moves; // If solved, return the number of moves.
-
-        // Decode the current hash back into a 2D board representation for manipulation.
+        
+        // Decode the current hash back into a 2D board representation to perform swaps.
         int[][] newBoard = decode(hash);
-
-        // Explore all 4 possible moves for the empty tile (0).
+        
+        // Explore possible moves from the current empty tile position (cx, cy).
+        // Iterate through the 4 possible directions (up, right, down, left).
         for(int i=0;i<4;i++){
-            // Calculate the coordinates of the adjacent tile to swap with.
-            int X = cx+neigh[i]; // New row
-            int Y = cy+neigh[i+1]; // New column
-
-            // Check if the adjacent tile's coordinates are within the board boundaries.
-            if(X<0 || Y<0 || X>=m || Y>=n) continue; // If out of bounds, skip this move.
-
-            // Perform the swap: move the empty tile to (X, Y).
+            // Calculate the coordinates of the neighbor tile to swap with.
+            // neigh[i] gives the row offset, neigh[i+1] gives the column offset.
+            int X = cx+neigh[i];
+            int Y = cy+neigh[i+1];
+            
+            // Check if the neighbor coordinates are within the board boundaries.
+            if(X<0 || Y<0 || X>=m || Y>=n) continue; // If out of bounds, skip this direction.
+            
+            // Perform the swap: move the empty tile to (X, Y) by swapping with the tile at (X, Y).
             swap(newBoard,cx,cy,X,Y);
-            // Calculate the integer hash of the new board configuration after the swap.
+            
+            // Encode the new board configuration into an integer hash.
             int newHash = encode(newBoard);
-
-            // Check if this new board configuration has been visited before.
+            
+            // Check if this new state has been visited before.
             if(!hashes.contains(newHash)){
                 // If not visited:
-                hashes.add(newHash); // Mark it as visited.
-                // Enqueue the new state: new position of zero, incremented moves, and new hash.
+                // Add the new hash to the set of visited states.
+                hashes.add(newHash);
+                // Enqueue the new state: new position of '0', incremented moves, and its hash.
                 q.offer(new int[]{X,Y,moves+1,newHash});
             }
+            
             // Backtrack: Swap the tiles back to restore the board to its state before this move.
-            // This is crucial for exploring other possible moves from the original (cx, cy) position.
+            // This is crucial for exploring other paths from the original (cx, cy) position.
             swap(newBoard,cx,cy,X,Y);
         }
       }
-      // If the queue becomes empty and the solved state was not reached, return -1 (no solution).
+      // If the queue becomes empty and the solved state was not reached, it means no solution exists.
       return -1;
     }
-
-    // Helper function to swap two tiles in the board.
+    
+    // Helper function to swap two tiles on the board.
     public void swap(int[][] board, int i1, int j1, int i2, int j2){
       // Store the value of the first tile.
       int temp = board[i1][j1];
@@ -262,78 +262,72 @@ class Solution {
       // Move the stored value (originally from the first tile) to the second position.
       board[i2][j2] = temp;
     }
-
-    // Helper function to check if the current board hash matches the solved board hash.
+    
+    // Helper function to check if the current hash matches the solved hash.
     public boolean isSolved(int hash){
-      return solvedHash == hash; // Return true if they match, false otherwise.
+      return solvedHash == hash;
     }
-
-    // Function to encode a 2D board configuration into a single integer hash.
-    // Assumes board dimensions are small enough that integer overflow is not an issue.
+    
+    // Encodes a 2D board configuration into a single integer.
+    // Assumes board dimensions are small enough that the resulting integer doesn't overflow.
     public int encode(int[][] board){
-      int hash = 0; // Initialize hash to 0.
+      int hash = 0;
       // Iterate through each cell of the board.
       for(int i=0;i<m;i++) {
-          for(int j=0;j<n;j++){
-              hash *= 10; // Shift existing hash to the left by one decimal place.
-              hash += board[i][j]; // Add the current tile's value.
+          for(int j=0;j<n;j++) {
+              // Shift the current hash left by one decimal place (multiply by 10).
+              hash *= 10;
+              // Add the value of the current cell to the hash.
+              hash += board[i][j];
           }
       }
-      return hash; // Return the final integer hash.
+      // Return the final integer hash representing the board state.
+      return hash;
     }
-
-    // Function to decode an integer hash back into a 2D board configuration.
-    // This assumes the encoding process was done by multiplying by 10 and adding digits.
+    
+    // Decodes an integer hash back into a 2D board configuration.
+    // This is the inverse operation of 'encode'.
     public int[][] decode(int hash){
-        // Create a new 2D array to store the decoded board.
-        int[][] decodedBoard = new int[m][n];
-        // Start filling from the bottom-right corner of the decoded board.
-        int i = m-1;
-        int j = n-1;
-        // While there are still digits in the hash to process.
-        while(hash>0){
-            // Get the last digit of the hash (which corresponds to the current cell's value).
-            decodedBoard[i][j] = hash%10;
-            // Remove the last digit from the hash.
-            hash /= 10;
-            // Move to the previous column.
-            j--;
-            // If we've reached the beginning of a row (j becomes -1).
-            if(j==-1) {
-                // Move to the previous row.
-                i--;
-                // Reset the column index to the last column of the new row.
-                j=n-1;
+        // Create a new 2D board of the correct dimensions.
+        int[][] board = new int[m][n];
+        // Iterate through the board cells in reverse order (bottom-right to top-left).
+        for(int i=m-1;i>=0;i--) {
+            for(int j=n-1;j>=0;j--) {
+                // The last digit of the hash corresponds to the current cell.
+                board[i][j] = hash%10;
+                // Remove the last digit from the hash by integer division.
+                hash /= 10;
             }
         }
-        // Return the decoded 2D board.
-        return decodedBoard;
+        // Return the reconstructed 2D board.
+        return board;
     }
 }
 ```
 
 ## Interview Tips
-1.  **Explain BFS Clearly**: Articulate why BFS is suitable for finding the minimum number of moves. Emphasize its layer-by-layer exploration.
-2.  **Discuss State Representation**: Highlight the importance of converting the 2D board into an integer hash for efficient `visited` set lookups. Explain the trade-offs and potential issues (like overflow for very large boards).
-3.  **Trace a Small Example**: Walk through a 2x2 or a simple 2x3 board manually to demonstrate how the BFS queue and visited set would evolve.
-4.  **Mention Backtracking**: Explain why the `swap` operation needs to be undone after exploring a move. This shows attention to detail in state management.
-5.  **Complexity Justification**: Be prepared to explain the time and space complexity, acknowledging that it's exponential in the worst case but practical for typical puzzle sizes.
+*   **Explain BFS Clearly**: Articulate why BFS is suitable for finding the minimum number of moves.
+*   **Discuss State Representation**: Emphasize the need for an efficient way to represent and store board states, and explain your encoding/decoding strategy.
+*   **Handle Edge Cases**: Be prepared to discuss what happens if the puzzle is unsolvable or if the input board is invalid (though LeetCode constraints usually handle this).
+*   **Trace an Example**: Walk through a small example (e.g., a 2x2 board) to demonstrate how your BFS and state transitions work.
+*   **Complexity Justification**: Be ready to explain the time and space complexity, especially the exponential factor due to the state space size.
 
 ## Revision Checklist
 - [ ] Understand the problem: Sliding puzzle, minimum moves.
 - [ ] Identify BFS as the core algorithm.
-- [ ] Implement state representation (hashing).
-- [ ] Handle board boundaries correctly.
-- [ ] Implement the swap and backtrack logic.
-- [ ] Manage the visited states using a HashSet.
+- [ ] Devise a state encoding/decoding mechanism (integer hash).
+- [ ] Implement BFS with a queue and visited set.
+- [ ] Handle board boundary checks.
+- [ ] Correctly implement swap and backtrack swap.
+- [ ] Calculate and compare hashes for solved state.
 - [ ] Analyze time and space complexity.
-- [ ] Practice explaining the solution and its components.
+- [ ] Practice explaining the solution and its trade-offs.
 
 ## Similar Problems
-*   8 Puzzle (LeetCode 773 is a generalization)
-*   Word Ladder (LeetCode 127)
-*   Shortest Path in Binary Matrix (LeetCode 1091)
-*   Escape the Ghosts (LeetCode 2070)
+*   81. Search in Rotated Sorted Array II (similar state-space search, but different problem)
+*   752. Open the Lock (BFS on states, string representation)
+*   1730. Shortest Path to Get Food (BFS on grid)
+*   1091. Shortest Path in Binary Matrix (BFS on grid)
 
 ## Tags
-`Array` `Hash Map` `Breadth-First Search` `State Space Search`
+`Array` `Breadth-First Search` `Hash Table` `Matrix` `State Machine`
