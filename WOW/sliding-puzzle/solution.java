@@ -1,8 +1,6 @@
 class Solution { 
     int[] neigh = {-1,0,1,0,-1};
-    int solvedHash;
-    int m;
-    int n;
+    int solvedHash,m,n;
     HashSet<Integer> hashes = new HashSet<>();
     public int slidingPuzzle(int[][] board) {
       m = board.length;
@@ -21,13 +19,11 @@ class Solution {
       Queue<int[]> q = new LinkedList<>(); //x,y,moves,hash
       q.offer(new int[]{x,y,0,encode(board)});
       hashes.add(startHash);
-      int iteration=1;
       while(!q.isEmpty()){
         int[] curr = q.poll();
         int cx = curr[0], cy = curr[1], moves = curr[2], hash = curr[3];
-        if(isSolved(hash)) return moves;
+        if(solvedHash == hash) return moves;
         int[][] newBoard = decode(hash);
-        
         for(int i=0;i<4;i++){
             int X = cx+neigh[i];
             int Y = cy+neigh[i+1];
@@ -47,9 +43,6 @@ class Solution {
       int temp = board[i1][j1];
       board[i1][j1] = board[i2][j2];
       board[i2][j2] = temp;
-    }
-    public boolean isSolved(int hash){
-      return solvedHash == hash;
     }
     public int encode(int[][] board){
       int hash = 0;
