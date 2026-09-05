@@ -57,15 +57,8 @@ class Solution {
       return hash;
     }
     public int[][] decode(int hash){
-        int[][] decodedBoard = new int[m][n];
-        int i = m-1;
-        int j = n-1;
-        while(hash>0){
-            decodedBoard[i][j] = hash%10;
-            hash /= 10;
-            j--;
-            if(j==-1) {i--;j=n-1;}
-        }
-        return decodedBoard;
+        int[][] board = new int[m][n];
+        for(int i=m-1;i>=0;i--) for(int j=n-1;j>=0;j--){board[i][j] = hash%10; hash/=10;}
+        return board;
     }
 }
