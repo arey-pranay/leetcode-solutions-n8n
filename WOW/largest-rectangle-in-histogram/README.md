@@ -2,7 +2,7 @@
 
 **Difficulty:** Hard  
 **Language:** Java  
-**Tags:** `Array` `Stack` `Monotonic Stack`  
+**Tags:** `Array` `Stack` `Monotonic Stack` `Range Minimum/Maximum Query`  
 **Time:** O(n)  
 **Space:** O(n)
 
@@ -12,92 +12,136 @@
 
 ```java
 class Solution {
-    public int largestRectangleArea(int[] heights) {        
+    public int largestRectangleArea(int[] heights) {
         Stack<Integer> st = new Stack<>();
         int ans = 0;
         int n = heights.length;
         for(int i=0;i<=n;i++){
-            int h = i==n ? 0 :heights[i];
-            while(!st.isEmpty() && h<heights[st.peek()]){
-                int height = heights[st.pop()];
-                int width = st.isEmpty() ? i : i-st.peek()-1;//2
-                ans = Math.max(ans,height*width);
+            int currH = i==n ? 0: heights[i];
+            while(!st.isEmpty() && currH < heights[st.peek()]){
+                int peekI = st.pop();
+                int height = heights[peekI];
+                int width = st.isEmpty() ? i : i-st.peek()-1;
+                int area = height*width;
+                // System.out.println(area + " = " + height + " * " +width);
+                ans = Math.max(ans, area);
             }
             st.push(i);
         }
         return ans;
     }
 }
+
 ```
 
 ---
 
 ---
-
 ## Quick Revision
-The problem is to find the area of the largest rectangle that can be formed from a histogram represented as an array of bar heights. We solve this problem by using a stack to keep track of the bars and iterating through the histogram.
+Find the largest rectangular area in a histogram represented by an array of bar heights.
+This is solved efficiently using a monotonic stack to track potential rectangle boundaries.
 
 ## Intuition
-The key insight here is that we don't actually need to know the maximum height at each position, but rather when a new maximum is reached. This allows us to use a stack to store the indices of the heights, which enables us to efficiently calculate the area of each rectangle.
+The core idea is that for any bar `h` at index `i`, the largest rectangle with `h` as its height will extend as far left and right as possible until it encounters a bar shorter than `h`. A monotonic increasing stack helps us find these boundaries efficiently. When we encounter a bar shorter than the top of the stack, it means the bar at the top of the stack can no longer extend to the right. We then pop it, calculate its maximum possible rectangle area (using the current bar as the right boundary and the previous element in the stack as the left boundary), and update our overall maximum.
 
 ## Algorithm
-1. Initialize an empty stack and a variable `ans` to store the maximum area.
-2. Iterate through the histogram, pushing the index of each height onto the stack.
-3. For each height, while there are bars on the stack with lower or equal heights:
-   - Pop the top bar from the stack (along with its height).
-   - Calculate the width of the rectangle by subtracting the index of the popped bar from the current index minus 1, or the index of the next bar in the stack if it exists.
-   - Update `ans` to be the maximum of its current value and the area of the rectangle (height * width).
-4. After iterating through all bars, return `ans`.
+1. Initialize an empty stack `st` to store indices of bars.
+2. Initialize `ans` to 0, which will store the maximum rectangle area found so far.
+3. Get the length of the `heights` array, `n`.
+4. Iterate from `i = 0` to `n` (inclusive). The `i = n` case is a sentinel to process any remaining bars in the stack.
+5. Inside the loop, determine the current height `currH`. If `i == n`, `currH` is 0; otherwise, it's `heights[i]`.
+6. While the stack is not empty AND `currH` is less than the height of the bar at the index `st.peek()`:
+    a. Pop the index `peekI` from the stack. This is the bar whose maximum rectangle area we will now calculate.
+    b. Get the `height` of this popped bar: `heights[peekI]`.
+    c. Calculate the `width` of the rectangle. If the stack is now empty, it means the popped bar was the shortest so far, and its rectangle extends from the beginning of the histogram up to `i-1`. So, `width = i`. If the stack is not empty, the left boundary is the index of the bar just below the popped one in the stack (`st.peek()`), and the right boundary is `i-1`. Thus, `width = i - st.peek() - 1`.
+    d. Calculate the `area` = `height * width`.
+    e. Update `ans = Math.max(ans, area)`.
+7. Push the current index `i` onto the stack.
+8. After the loop finishes, return `ans`.
 
 ## Concept to Remember
-* Stack data structure: a last-in-first-out (LIFO) collection of elements that can be pushed and popped efficiently.
-* Dynamic programming: breaking down a problem into smaller sub-problems and solving each one only once.
+*   **Monotonic Stack:** A stack where elements are always in increasing or decreasing order. This problem uses a monotonically increasing stack to find the nearest smaller elements to the left and right.
+*   **Stack for Range Queries:** Stacks are excellent for problems that involve finding the "next greater/smaller element" or determining boundaries for a current element.
+*   **Sentinel Value:** Using a sentinel value (like `i=n` with `currH=0`) simplifies the logic by ensuring all elements remaining in the stack are processed at the end.
 
 ## Common Mistakes
-* Failing to consider the case where there are multiple rectangles with the same maximum area, resulting in an incorrect solution.
-* Not handling the edge case where the input array is empty or has only one element.
-* Using a inefficient algorithm that doesn't take advantage of the stack data structure.
+*   **Off-by-one errors in width calculation:** Incorrectly calculating the width when the stack becomes empty or when determining the left boundary.
+*   **Not handling the end of the array:** Forgetting to process any bars left in the stack after the loop finishes, which can be solved by the sentinel value.
+*   **Incorrectly comparing heights:** Comparing `currH` with `heights[i]` instead of `heights[st.peek()]` inside the `while` loop.
+*   **Stack storing heights instead of indices:** Storing indices is crucial for calculating the width correctly.
 
 ## Complexity Analysis
-- Time: O(n) - reason / each height is processed at most once and for each height, we iterate over the stack which takes constant time.
-- Space: O(n) - reason / in the worst case, all elements are pushed onto the stack.
+*   Time: O(n) - Each bar is pushed onto and popped from the stack at most once. The loop runs `n+1` times.
+*   Space: O(n) - In the worst case (e.g., a strictly increasing histogram), the stack can store all `n` indices.
 
 ## Commented Code
 ```java
 class Solution {
-    public int largestRectangleArea(int[] heights) {        
-        Stack<Integer> st = new Stack<>(); // using a stack to keep track of bars
-        int ans = 0; // store max area found so far
+    public int largestRectangleArea(int[] heights) {
+        // Initialize a stack to store indices of bars.
+        // This stack will maintain indices of bars in increasing order of their heights.
+        Stack<Integer> st = new Stack<>();
+        // Initialize 'ans' to store the maximum rectangle area found so far.
+        int ans = 0;
+        // Get the number of bars in the histogram.
         int n = heights.length;
-        for (int i = 0; i <= n; i++) {
-            int h = i == n ? 0 : heights[i]; // consider edge case when i is out of bounds
-            while (!st.isEmpty() && h < heights[st.peek()]) { // while there are bars on the stack with lower height
-                int height = heights[st.pop()]; // pop top bar from stack (and its height)
-                int width = st.isEmpty() ? i : i - st.peek() - 1; // calculate width of rectangle
-                ans = Math.max(ans, height * width); // update max area found so far
+
+        // Iterate through the bars. The loop goes up to 'n' (inclusive) to act as a sentinel.
+        // When i == n, we use a current height of 0 to force processing of any remaining bars in the stack.
+        for(int i = 0; i <= n; i++) {
+            // Determine the current height. If i is n, it's a sentinel 0 height.
+            int currH = (i == n) ? 0 : heights[i];
+
+            // While the stack is not empty AND the current height is less than the height of the bar at the top of the stack:
+            // This means the bar at the top of the stack cannot extend further to the right (because currH is shorter).
+            while(!st.isEmpty() && currH < heights[st.peek()]) {
+                // Pop the index of the bar from the stack. This is the bar whose maximum rectangle area we will calculate.
+                int peekI = st.pop();
+                // Get the height of the popped bar.
+                int height = heights[peekI];
+                // Calculate the width of the rectangle.
+                // If the stack is empty after popping, it means the popped bar was the shortest so far,
+                // and its rectangle extends from the beginning of the histogram up to the current index 'i' (exclusive).
+                // So, the width is 'i'.
+                // If the stack is not empty, the left boundary is the index of the bar just below the popped one in the stack (st.peek()),
+                // and the right boundary is the current index 'i' (exclusive).
+                // Thus, the width is i - st.peek() - 1.
+                int width = st.isEmpty() ? i : i - st.peek() - 1;
+                // Calculate the area of the rectangle with the popped bar's height and calculated width.
+                int area = height * width;
+                // Update the maximum area found so far.
+                ans = Math.max(ans, area);
             }
+            // Push the current index 'i' onto the stack.
+            // This maintains the monotonic increasing property of the stack (by height).
             st.push(i);
         }
+        // Return the maximum rectangle area found.
         return ans;
     }
 }
 ```
 
 ## Interview Tips
-* Make sure to handle edge cases thoroughly.
-* Use a stack to efficiently keep track of bars and calculate the area of each rectangle.
-* Think carefully about the relationship between the indices on the stack and the heights at those indices.
+*   **Explain the Monotonic Stack:** Clearly articulate why a monotonic stack is suitable for this problem and how it helps find the nearest smaller elements.
+*   **Walk Through an Example:** Use a small example array (e.g., `[2,1,5,6,2,3]`) and trace the stack's state and calculations step-by-step.
+*   **Discuss Edge Cases:** Mention how the sentinel value (`i=n`, `currH=0`) handles remaining elements in the stack and how an empty input array would be handled (though the code implicitly handles it with `n=0`).
+*   **Clarify Width Calculation:** Be precise when explaining how the width is determined, especially the `i - st.peek() - 1` part.
 
 ## Revision Checklist
-- [ ] Understand the problem statement clearly.
-- [ ] Develop a correct algorithm that uses a stack to keep track of bars.
-- [ ] Handle edge cases properly (e.g. empty input array).
-- [ ] Test code with various inputs to ensure correctness.
+- [ ] Understand the problem statement and constraints.
+- [ ] Grasp the intuition behind using a monotonic stack.
+- [ ] Implement the algorithm with a stack storing indices.
+- [ ] Correctly calculate the width of rectangles when popping from the stack.
+- [ ] Handle the end of the array using a sentinel value or a separate loop.
+- [ ] Analyze time and space complexity.
+- [ ] Practice tracing the algorithm with different examples.
 
 ## Similar Problems
-* "Largest Rectangle in Histogram" (#11)
-* "Histograms" (#18)
-* "Stack and Queue" (#20)
+*   Trapping Rain Water
+*   Maximal Rectangle
+*   Shortest Subarray with Sum at Least K
+*   Daily Temperatures
 
 ## Tags
-`Array` `Hash Map`
+`Array` `Stack` `Monotonic Stack`
