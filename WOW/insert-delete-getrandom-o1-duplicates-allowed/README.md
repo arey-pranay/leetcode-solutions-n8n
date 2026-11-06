@@ -3,7 +3,7 @@
 **Difficulty:** Hard  
 **Language:** Java  
 **Tags:** `Array` `Hash Table` `Math` `Design` `Randomized`  
-**Time:** See complexity section  
+**Time:** O(1)  
 **Space:** O(N)
 
 ---
@@ -12,53 +12,45 @@
 
 ```java
 class RandomizedCollection {
-    ArrayList<Integer> arr;
-    HashMap<Integer,HashSet<Integer>> hm;
+    List<Integer> arr; // store whatever we have received, order doesnt matter here, but duplicates matter. we'll do O(1) removal from end
+    Map<Integer, HashSet<Integer>> hm; // to store the indices of all the numbers, with O(1) retrieval
     public RandomizedCollection() {
-        arr  = new ArrayList<>();
-        hm =  new HashMap<>();
+        arr = new ArrayList<>();
+        hm = new HashMap<>();
     }
     
     public boolean insert(int val) {
-        boolean flag = true;
-        if(hm.containsKey(val)) flag = false;
-        HashSet<Integer> temp = hm.getOrDefault(val,new HashSet<>());
-        temp.add(arr.size());
-        hm.put(val, temp);
         arr.add(val);
-        return flag;
+        boolean present = hm.containsKey(val);
+        
+        HashSet<Integer> indices = hm.getOrDefault(val,new HashSet<>());
+        indices.add(arr.size()-1);
+        hm.put(val,indices);
+        
+        return !present;
     }
     
     public boolean remove(int val) {
         if(!hm.containsKey(val)) return false;
-        // array me se O(1) removal bs last index pe hota hai, isliye jo bhi udaana hai usko last pe exchange krdo
-        // jo udaana hai uskka index kahan se laaye? isliye ek hashmap me sb values ka index store krlo
         HashSet<Integer> indices = hm.get(val);
-        int remIndex = indices.iterator().next(); // isse first waali aajati hai 
+        int index = indices.iterator().next();
+        indices.remove(index);
+        if(indices.isEmpty()) hm.remove(val);
+        // this index has num to be removed, so put the last num here, and delete last position
         int lastIndex = arr.size()-1;
-        int lastVal = arr.get(lastIndex);
-        // . . 7  .. . . .. 12
-        
-        // 7 -> 2,
-        // 12 -> 3,5,4
-        hm.get(val).remove(remIndex);
-        
-        if(remIndex != lastIndex){
-            arr.set(remIndex,lastVal);
-            hm.get(lastVal).remove(lastIndex);
-            hm.get(lastVal).add(remIndex);
+        int lastNum = arr.get(lastIndex);
+        if(index!=lastIndex){
+        arr.set(index,lastNum);
+        hm.get(lastNum).remove(lastIndex);
+        hm.get(lastNum).add(index);
         }
         arr.remove(lastIndex);
-       
-        
-        if(hm.get(val).isEmpty()) hm.remove(val);
         return true;
     }
     
     public int getRandom() {
-        //kyonki hashmap se random ni le paayenge isliey arraylist banana padha
-        int random = (int) (Math.random()*arr.size());
-        return arr.get(random);
+        int index = (int) (Math.random()*arr.size()); 
+        return arr.get(index);
     }
 }
 
@@ -75,182 +67,132 @@ class RandomizedCollection {
 
 ---
 ## Quick Revision
-This problem asks to implement a data structure that supports insertion, deletion, and random retrieval of elements in O(1) time, allowing for duplicate values.
-The solution uses an ArrayList to store elements and a HashMap to map values to their indices in the ArrayList.
+Design a data structure that supports insert, remove, and getRandom operations in expected O(1) time, allowing duplicate values.
+Solve it using a dynamic array for O(1) random access combined with a hash map tracking a set of indices for each element to handle duplicates.
 
 ## Intuition
-The core challenge is achieving O(1) for all operations, especially deletion and random retrieval.
-- `getRandom()`: An `ArrayList` allows O(1) random access by index.
-- `insert()`: Appending to an `ArrayList` is amortized O(1).
-- `remove()`: Removing an element from the middle of an `ArrayList` is O(n). To make it O(1), we can swap the element to be removed with the last element and then remove the last element. This requires efficiently finding the index of the element to be removed and updating the indices of the swapped elements. A `HashMap` mapping values to their indices is crucial here. Since duplicates are allowed, each value needs to map to a collection of its indices. A `HashSet` is suitable for storing these indices.
+The core challenge is achieving $O(1)$ time complexity for all three operations: `insert`, `remove`, and `getRandom`. A dynamic array (`ArrayList`) provides $O(1)$ random access for `getRandom` and $O(1)$ append for `insert`. However, finding an element to remove takes $O(N)$ time in an array unless we know its index. To achieve $O(1)$ removal, we need a hash map to look up the element's indices. Because duplicates are allowed, a single element can appear multiple times in the array, meaning the hash map must store a collection of indices (like a `HashSet`) for every unique value. When removing an element, to avoid shifting all subsequent elements (which takes $O(N)$ time), we swap the element being removed with the very last element in the array, update the hash map accordingly, and pop the last element in $O(1)$ time.
 
 ## Algorithm
-1.  **Initialization**:
-    *   Create an `ArrayList` (`arr`) to store the elements.
-    *   Create a `HashMap` (`hm`) where keys are the elements and values are `HashSet`s of indices where that element appears in `arr`.
-
-2.  **`insert(val)`**:
-    *   Check if `val` already exists in `hm`. If it does, set a flag `false` (indicating a duplicate was not inserted). Otherwise, set it to `true`.
-    *   Get the `HashSet` of indices for `val` from `hm`. If `val` is not present, create a new empty `HashSet`.
-    *   Add the current size of `arr` (which will be the index of the new element) to this `HashSet`.
-    *   Put the updated `HashSet` back into `hm` for `val`.
-    *   Add `val` to the end of `arr`.
-    *   Return the flag indicating if it was a new insertion.
-
-3.  **`remove(val)`**:
-    *   If `val` is not in `hm`, return `false`.
-    *   Get the `HashSet` of indices for `val` from `hm`.
-    *   Pick an arbitrary index (`remIndex`) from this `HashSet` (e.g., using `iterator().next()`). This is the index of an instance of `val` we want to remove.
-    *   Get the last element (`lastVal`) and its index (`lastIndex`) from `arr`.
-    *   If `remIndex` is not the same as `lastIndex`:
-        *   Replace the element at `remIndex` in `arr` with `lastVal`.
-        *   Remove `lastIndex` from the `HashSet` associated with `lastVal` in `hm`.
-        *   Add `remIndex` to the `HashSet` associated with `lastVal` in `hm`.
-    *   Remove `lastIndex` from `arr`.
-    *   Remove `remIndex` from the `HashSet` associated with `val` in `hm`.
-    *   If the `HashSet` for `val` becomes empty, remove `val` from `hm`.
-    *   Return `true`.
-
-4.  **`getRandom()`**:
-    *   Generate a random integer between 0 (inclusive) and `arr.size()` (exclusive).
-    *   Return the element at that random index from `arr`.
+1. Initialize a dynamic list (`arr`) to store elements and a hash map (`hm`) mapping each value to a set of its indices (`HashSet<Integer>`).
+2. For `insert(val)`:
+   - Append `val` to the end of `arr`.
+   - Add the new index (`arr.size() - 1`) to the set of indices for `val` in `hm`.
+   - Return `true` if `val` was not previously in the map (i.e., its index set was empty/absent), otherwise return `false`.
+3. For `remove(val)`:
+   - Check if `val` exists in `hm`. If not, return `false`.
+   - Retrieve an arbitrary index of `val` from its corresponding `HashSet` in `hm`.
+   - Remove this index from the `HashSet`. If the set becomes empty, remove `val` from `hm`.
+   - Get the last element of `arr` (`lastNum`) and its index (`lastIndex`).
+   - If the index to remove is different from `lastIndex`, overwrite the element at `index` in `arr` with `lastNum`, update `lastNum`'s indices in `hm` by removing `lastIndex` and adding `index`.
+   - Remove the last element from `arr`.
+   - Return `true`.
+4. For `getRandom()`:
+   - Generate a random integer within the bounds of `arr.size()`.
+   - Return the element at that random index in `arr`.
 
 ## Concept to Remember
-*   **Amortized O(1) Operations**: Understanding how `ArrayList` append operations achieve this.
-*   **Hash Map for Index Tracking**: Using a hash map to quickly find the location of elements for O(1) deletion.
-*   **Handling Duplicates**: The need for a collection (like `HashSet`) to store multiple indices for the same value.
-*   **O(1) Deletion Trick**: Swapping the element to be deleted with the last element and then removing the last element.
+- **Swap-with-Last Technique**: Deleting from the middle of an array takes $O(N)$ due to shifting, but swapping with the last element and truncating reduces deletion to $O(1)$.
+- **Handling Duplicates with Hash Maps of Sets**: When elements can repeat, tracking multiple locations requires mapping values to collections of indices rather than single integer indices.
+- **Trade-offs of `HashSet` Iteration**: Using `.iterator().next()` on a `HashSet` allows retrieving an index in $O(1)$ average time, avoiding $O(N)$ array searches.
 
 ## Common Mistakes
-*   **Not handling duplicates correctly**: Assuming each value maps to a single index, leading to incorrect removal or tracking.
-*   **Inefficient removal from `ArrayList`**: Directly using `arr.remove(index)` without the swap-and-pop trick, resulting in O(n) time.
-*   **Forgetting to update indices in the `HashMap`**: When an element is swapped, its index in the `HashMap` must be updated.
-*   **Edge cases in `remove()`**: Not correctly handling the case where the element to be removed is the last element.
-*   **Incorrect random number generation**: Off-by-one errors in generating the random index.
+- Forgetting to handle the edge case where the element being removed is already the last element in the array (self-swap).
+- Failing to clean up empty `HashSet` entries from the hash map, leading to memory bloat or incorrect existence checks.
+- Forgetting to update the index of the swapped last element in the hash map.
+- Using data structures like `ArrayList` for removals or searches directly, which degrades time complexity to $O(N)$.
 
 ## Complexity Analysis
-- Time:
-    - `insert(val)`: O(1) - `HashMap` operations and `ArrayList` append are O(1) on average.
-    - `remove(val)`: O(1) - `HashMap` operations, `ArrayList` `set` and `remove` (of the last element) are O(1).
-    - `getRandom()`: O(1) - `Math.random()` and `ArrayList.get()` are O(1).
-- Space: O(N) - where N is the number of elements stored in the collection. The `ArrayList` stores N elements, and the `HashMap` stores up to N entries (each mapping to a `HashSet` that collectively stores N indices).
+- Time: O(1) average for `insert`, `remove`, and `getRandom` because hash map insertions/lookups and array appending/swapping take expected constant time.
+- Space: O(N) where N is the total number of elements stored across all operations, required by the dynamic array and hash map.
 
 ## Commented Code
 ```java
-import java.util.ArrayList; // Import ArrayList for dynamic array
-import java.util.HashMap;   // Import HashMap for key-value mapping
-import java.util.HashSet;   // Import HashSet for storing unique indices
-
 class RandomizedCollection {
-    ArrayList<Integer> arr; // Stores the actual elements of the collection.
-    HashMap<Integer,HashSet<Integer>> hm; // Maps each value to a set of indices where it appears in 'arr'.
-
-    // Constructor to initialize the data structures.
+    // Dynamic array to store all elements, allowing duplicates and O(1) random access
+    List<Integer> arr; 
+    // Hash map mapping each value to a set of its indices for O(1) index retrieval
+    Map<Integer, HashSet<Integer>> hm; 
+    
     public RandomizedCollection() {
-        arr  = new ArrayList<>(); // Initialize an empty ArrayList.
-        hm =  new HashMap<>();    // Initialize an empty HashMap.
+        // Initialize the dynamic array
+        arr = new ArrayList<>();
+        // Initialize the hash map
+        hm = new HashMap<>();
     }
     
-    // Inserts a value into the collection.
-    // Returns true if the collection did not already contain the specified element.
     public boolean insert(int val) {
-        boolean flag = true; // Assume the value is new by default.
-        // Check if the value already exists in the HashMap.
-        if(hm.containsKey(val)) {
-            flag = false; // If it exists, it's a duplicate insertion, so set flag to false.
-        }
-        // Get the set of indices for 'val'. If 'val' is not in the map, create a new HashSet.
-        HashSet<Integer> temp = hm.getOrDefault(val,new HashSet<>());
-        // Add the current size of 'arr' (which is the index where 'val' will be added) to the set of indices.
-        temp.add(arr.size());
-        // Update the HashMap with the new set of indices for 'val'.
-        hm.put(val, temp);
-        // Add the value to the end of the ArrayList. This is an O(1) amortized operation.
+        // Add the value to the end of the array
         arr.add(val);
-        // Return whether the insertion was of a new element (true) or a duplicate (false).
-        return flag;
+        // Check if the value already exists in the collection
+        boolean present = hm.containsKey(val);
+        
+        // Retrieve or create the set of indices for this value
+        HashSet<Integer> indices = hm.getOrDefault(val, new HashSet<>());
+        // Add the new index (end of the array) to the set
+        indices.add(arr.size() - 1);
+        // Put the updated index set back into the map
+        hm.put(val, indices);
+        
+        // Return true if it was not present before, false otherwise
+        return !present;
     }
     
-    // Removes a value from the collection.
-    // Returns true if the collection contained the specified element.
     public boolean remove(int val) {
-        // If the value is not in the HashMap, it's not in the collection, so return false.
-        if(!hm.containsKey(val)) return false;
+        // If the value does not exist, we cannot remove it
+        if (!hm.containsKey(val)) return false;
+        // Get the set of indices where this value appears
+        HashSet<Integer> indices = hm.get(val);
+        // Grab any arbitrary index from the set in O(1) time
+        int index = indices.iterator().next();
+        // Remove this index from the value's index set
+        indices.remove(index);
+        // If no more instances of this value exist, remove it from the map
+        if (indices.isEmpty()) hm.remove(val);
         
-        // To achieve O(1) removal from an ArrayList, we swap the element to be removed
-        // with the last element and then remove the last element.
-        // We need to know the index of an instance of 'val' to remove.
-        HashSet<Integer> indices = hm.get(val); // Get the set of indices for 'val'.
-        // Get the first index from the set. This is the index of one instance of 'val' to remove.
-        int remIndex = indices.iterator().next(); 
+        // Find the last index and the last number in the array
+        int lastIndex = arr.size() - 1;
+        int lastNum = arr.get(lastIndex);
         
-        // Get the index of the last element in the ArrayList.
-        int lastIndex = arr.size()-1;
-        // Get the value of the last element.
-        int lastVal = arr.get(lastIndex);
-        
-        // Remove the index 'remIndex' from the set of indices for 'val'.
-        hm.get(val).remove(remIndex);
-        
-        // If the element to be removed is NOT the last element:
-        if(remIndex != lastIndex){
-            // Replace the element at 'remIndex' with 'lastVal'. This is O(1).
-            arr.set(remIndex,lastVal);
-            // Remove the 'lastIndex' from the set of indices for 'lastVal' in the HashMap.
-            hm.get(lastVal).remove(lastIndex);
-            // Add 'remIndex' to the set of indices for 'lastVal' in the HashMap, as 'lastVal' is now at 'remIndex'.
-            hm.get(lastVal).add(remIndex);
+        // If the element to remove is not the last element, swap it with the last element
+        if (index != lastIndex) {
+            // Overwrite the target index with the last number
+            arr.set(index, lastNum);
+            // Update the last number's index set: remove its old last index
+            hm.get(lastNum).remove(lastIndex);
+            // Add the new index where it was moved
+            hm.get(lastNum).add(index);
         }
-        
-        // Remove the last element from the ArrayList. This is O(1).
+        // Remove the last element from the array in O(1) time
         arr.remove(lastIndex);
-       
-        // If the set of indices for 'val' is now empty, remove 'val' from the HashMap entirely.
-        if(hm.get(val).isEmpty()) {
-            hm.remove(val);
-        }
-        // Return true to indicate successful removal.
+        // Return true indicating successful removal
         return true;
     }
     
-    // Returns a random element from the collection.
     public int getRandom() {
-        // We need an ArrayList to efficiently get a random element by index in O(1).
-        // Generate a random index within the bounds of the ArrayList.
-        int random = (int) (Math.random()*arr.size());
-        // Return the element at the randomly generated index.
-        return arr.get(random);
+        // Generate a random index between 0 and arr.size() - 1
+        int index = (int) (Math.random() * arr.size()); 
+        // Return the element at the random index
+        return arr.get(index);
     }
 }
-
-/**
- * Your RandomizedCollection object will be instantiated and called as such:
- * RandomizedCollection obj = new RandomizedCollection();
- * boolean param_1 = obj.insert(val);
- * boolean param_2 = obj.remove(val);
- * int param_3 = obj.getRandom();
- */
 ```
 
 ## Interview Tips
-*   Clearly explain the O(1) deletion strategy: swapping with the last element and removing the last.
-*   Emphasize why a `HashMap` mapping to a `HashSet` is necessary to handle duplicates and track indices.
-*   Walk through a small example for `remove()` to show how indices are updated in both the `ArrayList` and `HashMap`.
-*   Be prepared to discuss the time and space complexity of each operation.
+- Clarify whether duplicates should affect `getRandom` probability (they should be weighted by their frequency, which naturally happens when storing every instance in the array).
+- Walk through the swap-with-last logic clearly using a whiteboard or text diagram during the interview to prove your understanding of $O(1)$ removal.
+- Discuss how you handle memory management and clean up empty hash sets to avoid stale entries.
 
 ## Revision Checklist
-- [ ] Understand the O(1) requirement for all operations.
-- [ ] Implement `insert` using `ArrayList` and `HashMap` with `HashSet` for indices.
-- [ ] Implement `remove` using the swap-with-last-and-pop trick.
-- [ ] Ensure `HashMap` indices are correctly updated during removal.
-- [ ] Implement `getRandom` using `ArrayList`'s random access.
-- [ ] Analyze time and space complexity.
-- [ ] Consider edge cases like removing the last element or removing the only instance of a value.
+- [ ] Understand why a hash map of sets is necessary instead of a single integer index.
+- [ ] Explain the swap-with-last array deletion optimization.
+- [ ] Handle the edge case where the removed element is already at the tail of the array.
+- [ ] Verify average $O(1)$ time complexity for all operations.
 
 ## Similar Problems
-*   Insert Delete GetRandom O(1) (without duplicates)
-*   Design HashSet
-*   Design HashMap
+- `Insert Delete getRandom O(1)`
+- `First Unique Character in a String`
+- `All O(1) Data Structure`
 
 ## Tags
-`Array` `Hash Map` `Design` `Randomized`
+`Array` `Hash Table` `Math` `Design` `Randomized`
