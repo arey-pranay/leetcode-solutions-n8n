@@ -1,51 +1,43 @@
 class RandomizedCollection {
-    ArrayList<Integer> arr;
-    HashMap<Integer,HashSet<Integer>> hm;
+    List<Integer> arr; // store whatever we have received, order doesnt matter here, but duplicates matter. we'll do O(1) removal from end
+    Map<Integer, HashSet<Integer>> hm; // to store the indices of all the numbers, with O(1) retrieval
     public RandomizedCollection() {
-        arr  = new ArrayList<>();
-        hm =  new HashMap<>();
+        arr = new ArrayList<>();
+        hm = new HashMap<>();
     }
     
     public boolean insert(int val) {
-        boolean flag = true;
-        if(hm.containsKey(val)) flag = false;
-        HashSet<Integer> temp = hm.getOrDefault(val,new HashSet<>());
-        temp.add(arr.size());
-        hm.put(val, temp);
         arr.add(val);
-        return flag;
+        boolean present = hm.containsKey(val);
+        
+        HashSet<Integer> indices = hm.getOrDefault(val,new HashSet<>());
+        indices.add(arr.size()-1);
+        hm.put(val,indices);
+        
+        return !present;
     }
     
     public boolean remove(int val) {
         if(!hm.containsKey(val)) return false;
-        // array me se O(1) removal bs last index pe hota hai, isliye jo bhi udaana hai usko last pe exchange krdo
-        // jo udaana hai uskka index kahan se laaye? isliye ek hashmap me sb values ka index store krlo
         HashSet<Integer> indices = hm.get(val);
-        int remIndex = indices.iterator().next(); // isse first waali aajati hai 
+        int index = indices.iterator().next();
+        indices.remove(index);
+        if(indices.isEmpty()) hm.remove(val);
+        // this index has num to be removed, so put the last num here, and delete last position
         int lastIndex = arr.size()-1;
-        int lastVal = arr.get(lastIndex);
-        // . . 7  .. . . .. 12
-        
-        // 7 -> 2,
-        // 12 -> 3,5,4
-        hm.get(val).remove(remIndex);
-        
-        if(remIndex != lastIndex){
-            arr.set(remIndex,lastVal);
-            hm.get(lastVal).remove(lastIndex);
-            hm.get(lastVal).add(remIndex);
+        int lastNum = arr.get(lastIndex);
+        if(index!=lastIndex){
+        arr.set(index,lastNum);
+        hm.get(lastNum).remove(lastIndex);
+        hm.get(lastNum).add(index);
         }
         arr.remove(lastIndex);
-       
-        
-        if(hm.get(val).isEmpty()) hm.remove(val);
         return true;
     }
     
     public int getRandom() {
-        //kyonki hashmap se random ni le paayenge isliey arraylist banana padha
-        int random = (int) (Math.random()*arr.size());
-        return arr.get(random);
+        int index = (int) (Math.random()*arr.size()); 
+        return arr.get(index);
     }
 }
 
