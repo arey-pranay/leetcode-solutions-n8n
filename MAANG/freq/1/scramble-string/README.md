@@ -3,8 +3,8 @@
 **Difficulty:** Hard  
 **Language:** Java  
 **Tags:** `String` `Dynamic Programming`  
-**Time:** O(n^2 * 4^n)  
-**Space:** O(n * 4^n)
+**Time:** O(n^3)  
+**Space:** O(n^2)
 
 ---
 
@@ -42,85 +42,93 @@ class Solution {
 ---
 
 ---
+
 ## Quick Revision
-Given two strings, determine if they can be scrambled versions of each other.
-This problem can be solved using dynamic programming and memoization to optimize the recursive approach.
+Given two strings `s1` and `s2`, determine if they are scrambled versions of each other.
+Solve this problem using memoization and recursive comparison of substrings.
 
 ## Intuition
-The "aha moment" for this problem is recognizing that a scrambled version of a string can be obtained by breaking the string into two parts, comparing the scrambled versions of these parts, and then reversing the order of the parts and comparing again. This approach ensures that all possible scrambles of the original string are considered.
+The key insight is that two strings are scrambled versions of each other if and only if their subsequences (including the empty subsequence) are also scrambled versions of each other. This allows us to break down the problem into smaller subproblems and use memoization to avoid redundant computation.
 
 ## Algorithm
-1. Check if the input strings are equal or have different lengths. If they are equal, return true. If they have different lengths, return false.
-2. Create a memoization table to store the results of subproblems.
-3. For each possible split point `i` in the string, recursively check if the scrambled versions of the two parts can be obtained from the other string.
-4. If a scrambled version is found, store the result in the memoization table and return true.
-5. If no scrambled version is found, store the result in the memoization table and return false.
+1. Check if the input strings are equal. If they are, return true.
+2. Check if the input strings have the same length. If not, return false.
+3. Create a key by concatenating the two input strings. Use this key to check if the result is already stored in the memoization table.
+4. If the result is already stored, return the stored value.
+5. Otherwise, iterate through the input strings, breaking them into two parts at each possible position `i`.
+6. For each `i`, recursively check if the first `i` characters of `s1` are scrambled versions of the first `i` characters of `s2`, and if the remaining characters of `s1` are scrambled versions of the remaining characters of `s2`. If both conditions are true, return true.
+7. If the recursive call returns true for any `i`, store the result in the memoization table and return true.
+8. If all recursive calls return false, store the result in the memoization table and return false.
 
 ## Concept to Remember
-• **Memoization**: a technique to store the results of expensive function calls and return the cached result when the same inputs occur again.
-• **Dynamic Programming**: a technique to break down a problem into smaller subproblems, solve each subproblem only once, and store the results to avoid redundant computation.
-• **String manipulation**: the ability to break down strings into substrings and compare them.
+* Memoization: storing the results of expensive function calls so that they can be reused instead of recomputed.
+* Recursion: breaking down a problem into smaller subproblems that are similar in form.
 
 ## Common Mistakes
-• Failing to implement memoization, leading to redundant computation and high time complexity.
-• Not considering all possible split points in the string.
-• Not handling the case where the input strings are equal.
+* Failing to memoize the results of recursive calls, leading to exponential time complexity.
+* Not checking for the base case where the input strings are equal or have the same length.
+* Not handling the case where the input strings have different lengths.
 
 ## Complexity Analysis
-- Time: O(n^2 * 4^n) / The number of possible splits in the string grows exponentially with the length of the string, and for each split, we recursively check all possible scrambles.
-- Space: O(n * 4^n) / We store the results of subproblems in the memoization table, which grows exponentially with the length of the string.
+- Time: O(n^3) where n is the length of the input strings, due to the recursive comparison of substrings.
+- Space: O(n^2) where n is the length of the input strings, due to the memoization table.
 
 ## Commented Code
 ```java
 class Solution {
     HashMap<String, Boolean> memo = new HashMap<>();
-    
+
     public boolean isScramble(String s1, String s2) {
-        // Base cases
+        // Base case: if the input strings are equal, return true
         if (s1.equals(s2)) return true;
+        
+        // Base case: if the input strings have different lengths, return false
         if (s1.length() != s2.length()) return false;
         
+        // Create a key by concatenating the two input strings
         int n = s1.length();
         String key = s1 + s2;
         
         // Check if the result is already stored in the memoization table
         if (memo.containsKey(key)) return memo.get(key);
         
-        // Iterate over all possible split points
+        // Iterate through the input strings, breaking them into two parts at each possible position i
         for (int i = 1; i < n; i++) {
-            // Check if the scrambled versions of the two parts can be obtained from the other string
+            // Recursively check if the first i characters of s1 are scrambled versions of the first i characters of s2
+            // and if the remaining characters of s1 are scrambled versions of the remaining characters of s2
             if (isScramble(s1.substring(0, i), s2.substring(0, i)) && isScramble(s1.substring(i), s2.substring(i))) {
                 memo.put(key, true); return true;
             }
             
-            // Check if the scrambled versions of the two parts can be obtained from the other string
-            // by reversing the order of the parts
+            // Recursively check if the first i characters of s1 are scrambled versions of the remaining characters of s2
+            // and if the remaining characters of s1 are scrambled versions of the first i characters of s2
             if (isScramble(s1.substring(0, i), s2.substring(n - i)) && isScramble(s1.substring(i), s2.substring(0, n - i))) {
                 memo.put(key, true); return true;
             }
         }
         
-        // If no scrambled version is found, store the result in the memoization table and return false
+        // If all recursive calls return false, store the result in the memoization table and return false
         memo.put(key, false); return false;
     }
 }
 ```
 
 ## Interview Tips
-• Make sure to understand the problem thoroughly before starting to code.
-• Implement memoization to optimize the recursive approach.
-• Consider all possible split points in the string.
-• Handle the base cases carefully.
+* Make sure to explain the memoization technique and how it helps avoid redundant computation.
+* Emphasize the importance of checking for the base cases where the input strings are equal or have the same length.
+* Be prepared to explain the time and space complexity of the algorithm.
 
 ## Revision Checklist
-- [ ] Understand the problem thoroughly
-- [ ] Implement memoization
-- [ ] Consider all possible split points
-- [ ] Handle base cases carefully
+- [ ] Understand the problem and the memoization technique
+- [ ] Check for base cases where the input strings are equal or have the same length
+- [ ] Implement the recursive comparison of substrings
+- [ ] Use memoization to avoid redundant computation
+- [ ] Analyze the time and space complexity of the algorithm
 
 ## Similar Problems
-• [Regular Expression Matching](https://leetcode.com/problems/regular-expression-matching/)
-• [Wildcard Matching](https://leetcode.com/problems/wildcard-matching/)
+* [LeetCode 46. Permutations](https://leetcode.com/problems/permutations/)
+* [LeetCode 60. Permutation Sequence](https://leetcode.com/problems/permutation-sequence/)
+* [LeetCode 894. Alien Dictionary](https://leetcode.com/problems/alien-dictionary/)
 
 ## Tags
-`Array` `Hash Map` `String Manipulation` `Memoization` `Dynamic Programming`
+`Array` `Hash Map` `Memoization` `Recursion` `String`
